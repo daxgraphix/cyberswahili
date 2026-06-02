@@ -73,13 +73,8 @@ dependencies:
   # Shared preferences for persisting theme mode and app settings
   shared_preferences: ^2.2.3
 
-# App icon configuration
-flutter_icons:
-  android: true
-  ios: true
-  image_path: "assets/icon/app_icon.jpg"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icon/app_icon.jpg"
+  # Keep screen awake (replaces discontinued wakelock)
+  wakelock_plus: ^1.5.2
 
 dev_dependencies:
   flutter_test:
