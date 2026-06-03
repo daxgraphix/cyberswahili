@@ -82,6 +82,7 @@ class S {
   String get resetDone   => sw ? 'Mipangilio imewekwa upya'  : 'Settings have been reset';
   String get refreshing  => sw ? 'Makala yanasasishwa...'    : 'Refreshing articles...';
   String get linkCopied  => sw ? 'Kiungo kimekopwa!'         : 'Link copied!';
+  String get ok          => sw ? 'Sawa'                    : 'OK';
 
   // Post detail
   String get openBrowser  => sw ? 'Kivinjari' : 'Browser';
@@ -140,20 +141,21 @@ class S {
   
   // Reports - Interactive
   String get viewByCategory => sw ? 'Kwa Kategoria' : 'View by Category';
-  String get viewByTime => sw ? 'Kwa Muda' : 'View by Time';
-  String get categoryStats => sw ? 'Hitimishe kategoria' : 'Category Progress';
+  String get analytics => sw ? 'Vipengele' : 'Analytics';
+  String get weeklyTrend => sw ? 'Mbadala wa Wiki' : 'Weekly Trend';
+  String get distribution => sw ? 'Ubambuzi' : 'Distribution';
+  String get noCategoryData => sw ? 'Hakuna takwimu za kategoria' : 'No category data yet';
   String get readingStreak => sw ? 'Moyoni wa Kusoma' : 'Reading Streak';
   String get daysActive => sw ? 'siku zimefanya' : 'days active';
   String get assessment => sw ? 'Takwimu ya Kusoma' : 'Reading Assessment';
-  String get readingHabits => sw ? 'Desturi za Kusoma' : 'Reading Habits';
-  String get noCategoryData => sw ? 'Hakuna takwimu za kategoria' : 'No category data yet';
-  String get tapArticleToTrack => sw ? 'Bonyeza makala kutia mkoba' : 'Tap an article to start tracking';
-  String get weeklyTrend => sw ? 'Mbadala wa Wiki' : 'Weekly Trend';
-  String get monthlyTrend => sw ? 'Mbadala ya Mwezi' : 'Monthly Trend';
-  String get noDataYet => sw ? 'Hakuna data yote' : 'No data yet';
   String get booksRead => sw ? 'vitu vimebaki' : 'items read';
-  String get favVsRead => sw ? 'Vipendwa vs Kusoma' : 'Favourite vs Read';
-  String get distribution => sw ? 'Ubambuzi' : 'Distribution';
+  String get timeStats => sw ? 'Musanyiko' : 'Time Statistics';
+  String get daily => sw ? 'Lea' : 'Daily';
+  String get weekly => sw ? 'Wiki' : 'Weekly';
+  String get monthly => sw ? 'Mwezi' : 'Monthly';
+  String get todayRead => sw ? 'zilizosomwa leo' : 'read today';
+  String get thisWeek => sw ? 'kwa wiki' : 'this week';
+  String get thisMonth => sw ? 'kwa mwezi' : 'this month';
 
   // Settings sections
   String get secReports => sw ? 'RIPOTI' : 'REPORTS';
@@ -163,6 +165,7 @@ class S {
   String get clearReadHistorySub => sw ? 'Sisitiza rekodi za kusoma' : 'Clear your reading history';
   String get qnaTitle => sw ? 'Maswali na Majibu' : 'Questions & Answers';
   String get qnaSub => sw ? 'Swali maswali ya kawaida' : 'Frequently asked questions';
+  String get faqCount => sw ? 'Maswali ${faqs.length} yanayoulizwa mara nyingi' : '${faqs.length} frequently asked questions';
 
   List<Map<String, String>> get faqs {
     if (sw) {
@@ -190,8 +193,8 @@ class S {
   }
 
   // Language options
-   String get kiswahili => sw ? 'Kiswahili' : 'Kiswahili';
-   String get english => sw ? 'Kiingereza' : 'English';
+  String get kiswahili => sw ? 'Kiswahili' : 'Swahili';
+  String get english => sw ? 'Kiingereza' : 'English';
 
    // Categories page
    String get chooseCategoriesPageTitle => sw ? 'Chagua Kategoria' : 'Choose Categories';

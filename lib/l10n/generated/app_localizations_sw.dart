@@ -18,10 +18,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get categories => 'Makundi';
 
   @override
-  String get favorites => 'Vipendwa';
+  String get favorites => 'Zinazopendwa';
 
   @override
-  String get darkMode => 'Hali ya Giza';
+  String get darkMode => 'Mwanga wa Giza';
 
   @override
   String get settings => 'Mipangilio';
@@ -30,7 +30,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get search => 'Tafuta';
 
   @override
-  String get noInternet => 'Hakuna Muunganisho wa Mtandao';
+  String get noInternet => 'Hakuna Mtandao';
 
   @override
   String get retry => 'Jaribu Tena';
@@ -75,7 +75,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get all => 'Zote';
 
   @override
-  String get favourites => 'Vipendwa';
+  String get favourites => 'Zinazopendwapendwa';
 
   @override
   String get searchHint => 'Tafuta makala...';
@@ -96,7 +96,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get tapToLoad => 'Bonyeza kupakua';
 
   @override
-  String get showMore => 'Onyesha Upya';
+  String get showMore => 'Onyesha Zaidi';
 
   @override
   String get networkErr => 'Tatizo la Mtandao';
@@ -105,7 +105,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get tryAgain => 'Jaribu Tena';
 
   @override
-  String get fetching => 'Inatafuta kategoria...';
+  String get fetching => 'Inatafuta kategori...';
 
   @override
   String get noFavs => 'Hakuna vipendwa';
@@ -123,7 +123,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get secContent => 'MAKALA';
 
   @override
-  String get secNotifications => 'ARIFA';
+  String get secNotifications => 'TAARIFA';
 
   @override
   String get secCategories => 'UAINISHAJI';
@@ -147,7 +147,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get secReports => 'RIPOTI';
 
   @override
-  String get lightMode => 'Hali ya Mwanga';
+  String get lightMode => 'Mwanga';
 
   @override
   String get modeSub => 'Badilisha mandhari ya programu';
@@ -165,13 +165,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get offlineSub => 'Pakua kwa matumizi bila mtandao';
 
   @override
-  String get notifTitle => 'Arifa za Makala Mapya';
+  String get notifTitle => 'TAARIFA za Makala Mapya';
 
   @override
-  String get notifSub => 'Pokea taarifa makala mapya yapowekwa';
+  String get notifSub => 'Pokea taarifa makala mapya Inapowekwa';
 
   @override
-  String get chooseCategories => 'Chagua Kategoria';
+  String get chooseCategories => 'Chagua Kategori';
 
   @override
   String get catSub => 'Amua makundi yanayoonekana';
@@ -198,13 +198,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get clearCache => 'Futa Akiba';
 
   @override
-  String get clearCacheSub => 'Futa makala yote yaliyohifadhiwa';
+  String get clearCacheSub => 'Futa makala zote zilizohifadhiwa';
 
   @override
   String get resetAll => 'Weka Upya Mipangilio Yote';
 
   @override
-  String get resetSub => 'Rudisha mipangilio yote kwa kawaida';
+  String get resetSub => 'Rudisha mipangilio yote kawaida';
 
   @override
   String get small => 'Ndogo';
@@ -222,7 +222,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get proceed => 'Endelea';
 
   @override
-  String get shareCopied => 'Ujumbe wa kushiriki umekopwa!';
+  String get shareCopied => 'Ujumbe wa kushiriki kukopi!';
 
   @override
   String get cacheCleared => 'Akiba imefutwa kikamilifu';
@@ -253,7 +253,7 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get clearCacheBody =>
-      'Makala yote yaliyohifadhiwa yatafutwa. Utahitaji mtandao upya.';
+      'Makala zote zilizohifadhiwa zitafutwa. Utahitaji mtandao upya.';
 
   @override
   String get resetAllQ => 'Weka Upya Mipangilio?';

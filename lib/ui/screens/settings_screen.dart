@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:cyberswahili/providers/app_providers.dart';
 import 'package:cyberswahili/providers/blog_providers.dart';
 import 'package:cyberswahili/providers/strings_provider.dart';
@@ -32,7 +32,7 @@ class SettingsScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
           children: [
-            if (embedded) _header(context, cs),
+            if (embedded) _header(context, cs, s),
 
             _Sec(s.secAppearance, Icons.palette_rounded),
             _Card([
@@ -142,14 +142,6 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => _FaqPage(s: s))),
               ),
-              _Div(),
-              _NavRow(
-                icon: Icons.chat_bubble_rounded,
-                iconColor: Colors.teal,
-                title: s.qnaTitle,
-                sub: s.qnaSub,
-                onTap: () => _openQnA(context, s),
-              ),
             ]),
             const SizedBox(height: 20),
 
@@ -225,7 +217,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _header(BuildContext context, ColorScheme cs) => Container(
+  Widget _header(BuildContext context, ColorScheme cs, S s) => Container(
     margin: const EdgeInsets.only(bottom: 20),
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
@@ -239,8 +231,7 @@ class SettingsScreen extends ConsumerWidget {
         child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 22)),
       const SizedBox(width: 12),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Mipangilio', style: Theme.of(context).textTheme.titleLarge
-            ?.copyWith(fontWeight: FontWeight.w800)),
+        Text(s.settings, style: const TextStyle(fontWeight: FontWeight.w700)),
         Text('CyberSwahili v1.0.0', style: Theme.of(context).textTheme.bodySmall),
       ]),
     ]),
@@ -292,10 +283,10 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _shareApp(BuildContext ctx, S s) {
-    final text = 'Soma habari za Teknolojia kwa Kiswahili! '
-        'Pakua CyberSwahili — programu bora ya habari za Tech. '
-        '\nhttps://cyberswahili.blogspot.com';
-    Clipboard.setData(ClipboardData(text: text));
+    final text = s.sw
+        ? 'Soma habari za Teknolojia kwa Kiswahili! Pakua CyberSwahili — programu bora ya habari za Tech.\nhttps://cyberswahili.blogspot.com'
+        : 'Read technology news in Swahili! Download CyberSwahili — the best tech news app.\nhttps://cyberswahili.blogspot.com';
+    Share.share(text);
     _showSnackBar(ctx, s.shareCopied, AppTheme.primary);
   }
 
@@ -305,44 +296,6 @@ class SettingsScreen extends ConsumerWidget {
       await ref.read(readArticlesProvider.notifier).clearAll();
       if (ctx.mounted) _showSnackBar(ctx, s.cacheCleared, AppTheme.primary);
     }
-  }
-
-  void _openQnA(BuildContext ctx, S s) {
-    final faqs = s.faqs;
-    showModalBottomSheet(
-      context: ctx,
-      backgroundColor: Theme.of(ctx).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => Container(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(s.qnaTitle, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-          const SizedBox(height: 16),
-          ...faqs.take(3).map((faq) => ListTile(
-            leading: Container(width: 36, height: 36,
-              decoration: BoxDecoration(color: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-              child: Icon(Icons.help_outline_rounded, color: Theme.of(ctx).colorScheme.primary, size: 18)),
-            title: Text(faq['q']!),
-            trailing: Icon(Icons.chevron_right_rounded, size: 18),
-            onTap: () => _showFaqDialog(ctx, faq['q']!, faq['a']!),
-          )),
-        ]),
-      ),
-    );
-  }
-
-  void _showFaqDialog(BuildContext ctx, String title, String answer) {
-    showDialog(context: ctx, builder: (_) => AlertDialog(
-      backgroundColor: Theme.of(ctx).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      content: Text(answer, style: TextStyle(height: 1.5)),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Sawa')),
-      ],
-    ));
   }
 
   Future<bool> _confirm(BuildContext ctx, String title, String body, S s) async {
@@ -449,8 +402,7 @@ class _FaqPage extends StatelessWidget {
             child: Row(children: [
               Icon(Icons.quiz_rounded, color: cs.primary, size: 20),
               const SizedBox(width: 10),
-              Expanded(child: Text('Maswali ${faqs.length} yanayoulizwa mara nyingi.',
-                  style: Theme.of(context).textTheme.bodyMedium)),
+              Expanded(child: Text(s.faqCount, style: Theme.of(context).textTheme.bodyMedium)),
             ]),
           ),
           ...List.generate(faqs.length, (i) => _FaqTile(q: faqs[i]['q']!, a: faqs[i]['a']!)),

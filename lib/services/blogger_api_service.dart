@@ -30,6 +30,10 @@ class BloggerApiService {
         .toList();
   }
 
+  String? getNextPageToken(Map<String, dynamic> data) {
+    return data['nextPageToken'] as String?;
+  }
+
   Future<String> fetchPostContent(String postId) async {
     final url = Uri.parse(
       '$_base/blogs/$blogId/posts/$postId'

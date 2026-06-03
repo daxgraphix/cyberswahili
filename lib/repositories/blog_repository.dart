@@ -7,19 +7,24 @@ class BlogRepository {
   final BloggerApiService _api;
   BlogRepository(this._api);
 
-  Future<List<BlogPost>> getPosts(
-      {int maxResults = 20, bool forceRefresh = false}) async {
+  static const int defaultPageSize = 20;
+  static const int maxCacheSize = 500;
+
+  Future<List<BlogPost>> getPosts({
+    int maxResults = defaultPageSize,
+    bool forceRefresh = false,
+  }) async {
     final isar = await DatabaseService.isar;
     final cached = await isar.blogPosts.buildQuery<BlogPost>().findAll();
     final sortedCache = _sortByDate(cached);
 
     if (sortedCache.isNotEmpty && !forceRefresh) {
-      _refreshInBackground(maxResults);
+      _refreshInBackground(defaultPageSize);
       return sortedCache.take(maxResults).toList();
     }
 
     try {
-      final fresh = await _api.fetchPosts(maxResults: maxResults);
+      final fresh = await _api.fetchPosts(maxResults: maxResults * 3);
       await _upsert(fresh);
       return _sortByDate(fresh);
     } catch (e) {
@@ -29,18 +34,18 @@ class BlogRepository {
   }
 
   Future<List<BlogPost>> loadMorePosts({
-    int maxResults = 20,
+    int maxResults = defaultPageSize,
     DateTime? afterDate,
   }) async {
+    final fresh = await _api.fetchPosts(maxResults: maxResults * 2);
+    await _upsert(fresh);
+    
     final isar = await DatabaseService.isar;
     final all = await isar.blogPosts.buildQuery<BlogPost>().findAll();
     final sorted = _sortByDate(List.from(all));
     
-    if (afterDate != null) {
-      final hasMore = sorted.any((p) => p.published.isBefore(afterDate));
-      return hasMore
-          ? sorted.skipWhile((p) => p.published.isAfter(afterDate)).take(maxResults).toList()
-          : [];
+    if (afterDate != null && sorted.any((p) => p.published.isBefore(afterDate))) {
+      return sorted.skipWhile((p) => p.published.isAfter(afterDate)).take(maxResults).toList();
     }
     
     return sorted.take(maxResults).toList();
@@ -60,8 +65,7 @@ class BlogRepository {
         'Post not in cache. Refresh the feed first.\nDetail: $content');
   }
 
-  Future<List<BlogPost>> getPostsByLabel(String label,
-      {int maxResults = 50}) async {
+  Future<List<BlogPost>> getPostsByLabel(String label, {int maxResults = 50}) async {
     final all = await getPosts(forceRefresh: false, maxResults: 100);
     final filtered = _sortByDate(all
         .where(

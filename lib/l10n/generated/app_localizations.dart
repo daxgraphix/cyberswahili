@@ -119,13 +119,13 @@ abstract class AppLocalizations {
   /// No description provided for @favorites.
   ///
   /// In sw, this message translates to:
-  /// **'Vipendwa'**
+  /// **'Zinazopendwa'**
   String get favorites;
 
   /// No description provided for @darkMode.
   ///
   /// In sw, this message translates to:
-  /// **'Hali ya Giza'**
+  /// **'Mwanga wa Giza'**
   String get darkMode;
 
   /// No description provided for @settings.
@@ -143,7 +143,7 @@ abstract class AppLocalizations {
   /// No description provided for @noInternet.
   ///
   /// In sw, this message translates to:
-  /// **'Hakuna Muunganisho wa Mtandao'**
+  /// **'Hakuna Mtandao'**
   String get noInternet;
 
   /// No description provided for @retry.
@@ -233,7 +233,7 @@ abstract class AppLocalizations {
   /// No description provided for @favourites.
   ///
   /// In sw, this message translates to:
-  /// **'Vipendwa'**
+  /// **'Zinazopendwapendwa'**
   String get favourites;
 
   /// No description provided for @searchHint.
@@ -275,7 +275,7 @@ abstract class AppLocalizations {
   /// No description provided for @showMore.
   ///
   /// In sw, this message translates to:
-  /// **'Onyesha Upya'**
+  /// **'Onyesha Zaidi'**
   String get showMore;
 
   /// No description provided for @networkErr.
@@ -293,7 +293,7 @@ abstract class AppLocalizations {
   /// No description provided for @fetching.
   ///
   /// In sw, this message translates to:
-  /// **'Inatafuta kategoria...'**
+  /// **'Inatafuta kategori...'**
   String get fetching;
 
   /// No description provided for @noFavs.
@@ -329,7 +329,7 @@ abstract class AppLocalizations {
   /// No description provided for @secNotifications.
   ///
   /// In sw, this message translates to:
-  /// **'ARIFA'**
+  /// **'TAARIFA'**
   String get secNotifications;
 
   /// No description provided for @secCategories.
@@ -377,7 +377,7 @@ abstract class AppLocalizations {
   /// No description provided for @lightMode.
   ///
   /// In sw, this message translates to:
-  /// **'Hali ya Mwanga'**
+  /// **'Mwanga'**
   String get lightMode;
 
   /// No description provided for @modeSub.
@@ -413,19 +413,19 @@ abstract class AppLocalizations {
   /// No description provided for @notifTitle.
   ///
   /// In sw, this message translates to:
-  /// **'Arifa za Makala Mapya'**
+  /// **'TAARIFA za Makala Mapya'**
   String get notifTitle;
 
   /// No description provided for @notifSub.
   ///
   /// In sw, this message translates to:
-  /// **'Pokea taarifa makala mapya yapowekwa'**
+  /// **'Pokea taarifa makala mapya Inapowekwa'**
   String get notifSub;
 
   /// No description provided for @chooseCategories.
   ///
   /// In sw, this message translates to:
-  /// **'Chagua Kategoria'**
+  /// **'Chagua Kategori'**
   String get chooseCategories;
 
   /// No description provided for @catSub.
@@ -479,7 +479,7 @@ abstract class AppLocalizations {
   /// No description provided for @clearCacheSub.
   ///
   /// In sw, this message translates to:
-  /// **'Futa makala yote yaliyohifadhiwa'**
+  /// **'Futa makala zote zilizohifadhiwa'**
   String get clearCacheSub;
 
   /// No description provided for @resetAll.
@@ -491,7 +491,7 @@ abstract class AppLocalizations {
   /// No description provided for @resetSub.
   ///
   /// In sw, this message translates to:
-  /// **'Rudisha mipangilio yote kwa kawaida'**
+  /// **'Rudisha mipangilio yote kawaida'**
   String get resetSub;
 
   /// No description provided for @small.
@@ -527,7 +527,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareCopied.
   ///
   /// In sw, this message translates to:
-  /// **'Ujumbe wa kushiriki umekopwa!'**
+  /// **'Ujumbe wa kushiriki kukopi!'**
   String get shareCopied;
 
   /// No description provided for @cacheCleared.
@@ -587,7 +587,7 @@ abstract class AppLocalizations {
   /// No description provided for @clearCacheBody.
   ///
   /// In sw, this message translates to:
-  /// **'Makala yote yaliyohifadhiwa yatafutwa. Utahitaji mtandao upya.'**
+  /// **'Makala zote zilizohifadhiwa zitafutwa. Utahitaji mtandao upya.'**
   String get clearCacheBody;
 
   /// No description provided for @resetAllQ.
