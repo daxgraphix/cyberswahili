@@ -96,8 +96,8 @@ class S {
       : 'All stored articles will be deleted. You\'ll need internet to reload.';
   String get resetAllQ    => sw ? 'Weka Upya Mipangilio?' : 'Reset All Settings?';
   String get resetAllBody => sw
-      ? 'Mipangilio yote, pamoja na vipendwa na uainishaji, itarudi kwa kawaida.'
-      : 'All settings including favourites and categories will be reset to defaults.';
+      ? 'Mipangilio yote, pamoja na vipendwa, kati ya kusoma, na uainishaji, itarudi kwa kawaida.'
+      : 'All settings including favourites, read history, and categories will be reset to defaults.';
   String get categoriesPageTitle => sw ? 'Chagua Kategoria' : 'Choose Categories';
   String get categoriesHint => sw
       ? 'Chagua makundi unayotaka kuona kwenye ukurasa wa nyumbani.'
@@ -137,13 +137,59 @@ class S {
   String get saveMoreDesc => sw ? 'Hujaweka makala nyingi. Bonyeza alama ya kitabu!' : 'You haven\'t saved many articles. Tap the bookmark icon!';
   String get keepUpdated => sw ? 'Endelea Kujua' : 'Keep Updated';
   String get keepUpdatedDesc => sw ? 'Onyesha upya mara kwa mara kupata makala mpya' : 'Refresh regularly to get new articles';
+  
+  // Reports - Interactive
+  String get viewByCategory => sw ? 'Kwa Kategoria' : 'View by Category';
+  String get viewByTime => sw ? 'Kwa Muda' : 'View by Time';
+  String get categoryStats => sw ? 'Hitimishe kategoria' : 'Category Progress';
+  String get readingStreak => sw ? 'Moyoni wa Kusoma' : 'Reading Streak';
+  String get daysActive => sw ? 'siku zimefanya' : 'days active';
+  String get assessment => sw ? 'Takwimu ya Kusoma' : 'Reading Assessment';
+  String get readingHabits => sw ? 'Desturi za Kusoma' : 'Reading Habits';
+  String get noCategoryData => sw ? 'Hakuna takwimu za kategoria' : 'No category data yet';
+  String get tapArticleToTrack => sw ? 'Bonyeza makala kutia mkoba' : 'Tap an article to start tracking';
+  String get weeklyTrend => sw ? 'Mbadala wa Wiki' : 'Weekly Trend';
+  String get monthlyTrend => sw ? 'Mbadala ya Mwezi' : 'Monthly Trend';
+  String get noDataYet => sw ? 'Hakuna data yote' : 'No data yet';
+  String get booksRead => sw ? 'vitu vimebaki' : 'items read';
+  String get favVsRead => sw ? 'Vipendwa vs Kusoma' : 'Favourite vs Read';
+  String get distribution => sw ? 'Ubambuzi' : 'Distribution';
 
   // Settings sections
   String get secReports => sw ? 'RIPOTI' : 'REPORTS';
   String get viewReports => sw ? 'Onyesha Ripoti' : 'View Reports';
   String get reportsDesc => sw ? 'Angalia takwimu za makala ulizosoma' : 'Check statistics of articles you\'ve read';
+  String get clearReadHistory => sw ? 'Futa Kati ya Kusoma' : 'Clear Read History';
+  String get clearReadHistorySub => sw ? 'Sisitiza rekodi za kusoma' : 'Clear your reading history';
+  String get qnaTitle => sw ? 'Maswali na Majibu' : 'Questions & Answers';
+  String get qnaSub => sw ? 'Swali maswali ya kawaida' : 'Frequently asked questions';
 
-   // Language options
+  List<Map<String, String>> get faqs {
+    if (sw) {
+      return [
+        {'q': 'CyberSwahili ni nini?', 'a': 'CyberSwahili ni programu inayoleta habari za teknolojia kwa lugha ya Kiswahili. Tunaamini kila Mwafrika anastahili kupata elimu ya kidijitali kwa lugha yake.'},
+        {'q': 'Jeppi ya kusoma bila mtandao?', 'a': 'Washa "Hifadhi Nje ya Mtandano" kwenye Mipangilio. Makala yatahifadhiwa kwenye simu yako na unaweza kuyasoma hata bila mtandao.'},
+        {'q': 'Jeppi ya kuhifadhi makala?', 'a': 'Gusa ikoni ya alama ya kitabu (🔖) kwenye makala yoyote. Makala yako yataorodheshwa kwenye kichupo cha "Vipendwa".'},
+        {'q': 'Jeppi ya kubadilisha rangi?', 'a': 'Nenda Mipangilio → Muonekano → Badilisha kati ya "Hali ya Giza" na "Hali ya Mwanga".'},
+        {'q': 'Makala yanapiganwa kwa njia gani?', 'a': 'Makala hutoka kupitia Google Blogger API. Yanasasishwa wakati unafungua programu.'},
+        {'q': 'Jeppi ya kushiriki makala?', 'a': 'Fungua makala yoyote kisha bonyeza kitufe cha "Shiriki". Kiungo kitakopwa kwenye clipboard.'},
+        {'q': 'Programu haifanyi kazi vizuri?', 'a': 'Jaribu: 1) Hakikisha una mtandao. 2) Futa akiba. 3) Funga na ufungue programu upya.'},
+        {'q': 'Jeppi ya kubadilisha lugha?', 'a': 'Nenda Mipangilio → Lugha → Chagua "Kiswahili" au "Kiingereza".'},
+      ];
+    }
+    return [
+      {'q': 'What is CyberSwahili?', 'a': 'CyberSwahili is an app that brings technology news in Swahili. We believe every African deserves digital education in their language.'},
+      {'q': 'How can I read offline?', 'a': 'Enable "Offline Cache" in Settings. Articles will be saved on your device for offline reading.'},
+      {'q': 'How to save articles?', 'a': 'Tap the bookmark icon (🔖) on any article. Saved articles appear in the "Favourites" section.'},
+      {'q': 'How to change app theme?', 'a': 'Go to Settings → Appearance → Switch between "Dark Mode" and "Light Mode".'},
+      {'q': 'How are articles fetched?', 'a': 'Articles come from Google Blogger API. They refresh automatically when you open the app.'},
+      {'q': 'How to share articles?', 'a': 'Open any article and tap the "Share" button. The link copies to your clipboard.'},
+      {'q': 'Why isnt the app working?', 'a': 'Try: 1) Check internet connection. 2) Clear cache. 3) Restart the app.'},
+      {'q': 'How to change language?', 'a': 'Go to Settings → Language → Choose "Swahili" or "English".'},
+    ];
+  }
+
+  // Language options
    String get kiswahili => sw ? 'Kiswahili' : 'Kiswahili';
    String get english => sw ? 'Kiingereza' : 'English';
 

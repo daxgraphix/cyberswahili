@@ -26,7 +26,6 @@ class PostCard extends ConsumerWidget {
   }
 }
 
-// ── Hero Card ─────────────────────────────────────────────────────────────────
 class _HeroCard extends StatelessWidget {
   final BlogPost post;
   final VoidCallback onTap;
@@ -51,7 +50,6 @@ class _HeroCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               _Thumbnail(url: post.thumbnailUrl),
-              // Gradient overlay
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -62,7 +60,6 @@ class _HeroCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Content
               Positioned(
                 left: 18, right: 18, bottom: 18,
                 child: Column(
@@ -102,7 +99,6 @@ class _HeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Featured badge + Fav button row
               Positioned(
                 top: 10, left: 12, right: 12,
                 child: Row(children: [
@@ -131,7 +127,6 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// ── Compact Card ──────────────────────────────────────────────────────────────
 class _CompactCard extends StatelessWidget {
   final BlogPost post;
   final VoidCallback onTap;
@@ -150,13 +145,11 @@ class _CompactCard extends StatelessWidget {
           border: Border.all(color: cs.outline),
         ),
         child: Row(children: [
-          // Thumbnail
           ClipRRect(
             borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
             child: SizedBox(width: 110, height: 108,
                 child: _Thumbnail(url: post.thumbnailUrl)),
           ),
-          // Text content
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
@@ -200,7 +193,6 @@ class _CompactCard extends StatelessWidget {
   }
 }
 
-// ── Shared widgets ────────────────────────────────────────────────────────────
 class _Thumbnail extends StatelessWidget {
   final String? url;
   const _Thumbnail({this.url});
@@ -213,9 +205,8 @@ class _Thumbnail extends StatelessWidget {
         fit: BoxFit.cover,
         placeholder: (ctx, url) => Container(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Center(child: SizedBox(width: 20, height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2,
-                    color: Theme.of(context).colorScheme.primary)))),
+            child: const Center(child: SizedBox(width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2)))),
         errorWidget: (ctx, url, err) => _placeholder(context),
       );
     }
@@ -229,7 +220,6 @@ class _Thumbnail extends StatelessWidget {
   );
 }
 
-// Favourite toggle button
 class _FavBtn extends ConsumerWidget {
   final String postId;
   final bool mini;

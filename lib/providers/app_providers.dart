@@ -36,16 +36,14 @@ final themeModeProvider =
 
 // ── View Modes ────────────────────────────────────────────────────────────────
 
-enum ViewMode { list, grid, cards }
-
-// ── App Settings ──────────────────────────────────────────────────────────────
+enum ViewMode { list, cards }
 
 class AppSettings {
-  final double textScale;    // 0.85 | 1.0 | 1.2
+  final double textScale;
   final bool swahiliFirst;
   final bool autoCache;
   final bool notifications;
-  final ViewMode viewMode;   // list | grid | cards
+  final ViewMode viewMode;
 
   const AppSettings({
     this.textScale = 1.0,
@@ -106,6 +104,11 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   Future<void> setViewMode(ViewMode mode) async {
     state = state.copyWith(viewMode: mode);
     await _prefs.setInt('view_mode', mode.index);
+  }
+
+  Future<void> clearReadHistory() async {
+    state = state.copyWith();
+    await _prefs.remove('read_articles');
   }
 }
 

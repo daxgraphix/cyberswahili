@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cyberswahili/providers/blog_providers.dart';
 import 'package:cyberswahili/providers/app_providers.dart';
 import 'package:cyberswahili/ui/theme/app_theme.dart';
+import 'package:cyberswahili/models/blog_post.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -24,7 +25,6 @@ class PostDetailScreen extends ConsumerWidget {
           onRetry: () => ref.read(blogPostProvider(postId).notifier).loadPost(postId),
         ),
         data: (post) {
-          // Mark article as read when loaded
           ref.read(readArticlesProvider.notifier).markAsRead(post.postId);
           return _ArticleBody(post: post);
         },
@@ -33,9 +33,8 @@ class PostDetailScreen extends ConsumerWidget {
   }
 }
 
-// ── Article body ──────────────────────────────────────────────────────────────
 class _ArticleBody extends StatefulWidget {
-  final dynamic post;
+  final BlogPost post;
   const _ArticleBody({required this.post});
   @override
   State<_ArticleBody> createState() => _ArticleBodyState();
@@ -71,7 +70,6 @@ class _ArticleBodyState extends State<_ArticleBody> {
       CustomScrollView(
         controller: _scroll,
         slivers: [
-          // Collapsing header image
           SliverAppBar(
             expandedHeight: hasBg ? 280 : 0,
             pinned: true,
@@ -83,12 +81,11 @@ class _ArticleBodyState extends State<_ArticleBody> {
             actions: [
               _CircleBtn(icon: Icons.share_rounded, onTap: () => _share(post, context)),
               _CircleBtn(icon: Icons.open_in_browser_rounded, onTap: () => _browser(post.url)),
-              // Favourite toggle
               Consumer(builder: (context, ref, _) {
-                final isFav = ref.watch(favouritesProvider).contains(post.postId as String);
+                final isFav = ref.watch(favouritesProvider).contains(post.postId);
                 return _CircleBtn(
                   icon: isFav ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-                  onTap: () => ref.read(favouritesProvider.notifier).toggle(post.postId as String),
+                  onTap: () => ref.read(favouritesProvider.notifier).toggle(post.postId),
                   iconColor: isFav ? AppTheme.primary : Colors.white,
                 );
               }),
@@ -117,26 +114,22 @@ class _ArticleBodyState extends State<_ArticleBody> {
                 : null,
           ),
 
-          // Article content
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                // Labels
-                if ((post.labels as List).isNotEmpty)
+                if (post.labels.isNotEmpty)
                   Wrap(
                     spacing: 6, runSpacing: 6,
-                    children: (post.labels as List).map<Widget>((l) => _Chip(l as String)).toList(),
+                    children: post.labels.map<Widget>((l) => _Chip(l)).toList(),
                   ),
                 const SizedBox(height: 16),
 
-                // Title
                 Text(post.title,
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.w800, letterSpacing: -0.5, height: 1.3)),
                 const SizedBox(height: 18),
 
-                // Meta card
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -166,21 +159,19 @@ class _ArticleBodyState extends State<_ArticleBody> {
                       Text(_date(post.published),
                           style: Theme.of(context).textTheme.bodySmall),
                     ])),
-                    _ReadTime(content: post.content as String),
+                    _ReadTime(content: post.content),
                   ]),
                 ),
                 const SizedBox(height: 24),
 
-                // Red divider
                 Container(height: 2, decoration: BoxDecoration(
                   gradient: LinearGradient(colors: [AppTheme.primary, AppTheme.primary.withValues(alpha: 0)]),
                 )),
                 const SizedBox(height: 24),
 
-                // Content
                 HtmlWidget(
-                  (post.content as String).isNotEmpty
-                      ? post.content as String
+                  post.content.isNotEmpty
+                      ? post.content
                       : '<p>Maudhui yanapakiwa... Tafadhali subiri.</p>',
                   textStyle: TextStyle(color: cs.onSurface, fontSize: 16, height: 1.8),
                   customStylesBuilder: (el) {
@@ -200,7 +191,6 @@ class _ArticleBodyState extends State<_ArticleBody> {
                 ),
                 const SizedBox(height: 32),
 
-                // Bottom action buttons
                 Row(children: [
                   Expanded(
                     child: OutlinedButton.icon(
@@ -224,7 +214,6 @@ class _ArticleBodyState extends State<_ArticleBody> {
         ],
       ),
 
-      // Progress bar
       Positioned(top: 0, left: 0, right: 0,
           child: LinearProgressIndicator(
             value: _progress, minHeight: 2,
@@ -234,9 +223,8 @@ class _ArticleBodyState extends State<_ArticleBody> {
     ]);
   }
 
-  void _share(dynamic post, BuildContext context) {
+  void _share(BlogPost post, BuildContext context) {
     Share.share('${post.title}\n${post.url}');
-    // No snack needed as share opens system dialog
   }
 
   Future<void> _browser(String url) async {

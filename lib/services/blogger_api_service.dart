@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/blog_post.dart';
 
-/// Handles all Blogger API v3 communication with timeout + retry
 class BloggerApiService {
   static const String _base = 'https://www.googleapis.com/blogger/v3';
   static const Duration _timeout = Duration(seconds: 12);
@@ -12,16 +11,18 @@ class BloggerApiService {
 
   BloggerApiService({required this.apiKey, required this.blogId});
 
-  // Fetch list of posts — includes images for thumbnails
-  Future<List<BlogPost>> fetchPosts({int maxResults = 20}) async {
-    final url = Uri.parse(
-      '$_base/blogs/$blogId/posts'
-      '?key=$apiKey'
-      '&maxResults=$maxResults'
-      '&fetchBodies=false'
-      '&fetchImages=true'
-      '&status=live',
-    );
+  Future<List<BlogPost>> fetchPosts({int maxResults = 20, String? pageToken}) async {
+    final params = <String, String>{
+      'key': apiKey,
+      'maxResults': maxResults.toString(),
+      'fetchBodies': 'false',
+      'fetchImages': 'true',
+      'status': 'live',
+    };
+    if (pageToken != null) params['pageToken'] = pageToken;
+
+    final query = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+    final url = Uri.parse('$_base/blogs/$blogId/posts?$query');
     final data = await _get(url);
     final items = data['items'] as List<dynamic>? ?? [];
     return items
@@ -29,7 +30,6 @@ class BloggerApiService {
         .toList();
   }
 
-  // Fetch full content of a single post
   Future<String> fetchPostContent(String postId) async {
     final url = Uri.parse(
       '$_base/blogs/$blogId/posts/$postId'
@@ -40,7 +40,6 @@ class BloggerApiService {
     return data['content'] as String? ?? '';
   }
 
-  // Fetch posts filtered by label
   Future<List<BlogPost>> fetchPostsByLabel(String label,
       {int maxResults = 50}) async {
     final url = Uri.parse(
@@ -59,7 +58,6 @@ class BloggerApiService {
         .toList();
   }
 
-  // Core GET with timeout and descriptive errors
   Future<Map<String, dynamic>> _get(Uri url) async {
     try {
       final response = await http.get(url).timeout(_timeout);

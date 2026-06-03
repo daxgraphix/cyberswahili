@@ -142,7 +142,6 @@ class _ArticlesBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Column(children: [
-      // App bar
       SafeArea(bottom: false, child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 12, 8),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -192,7 +191,6 @@ class _ArticlesBody extends ConsumerWidget {
           ],
         ]),
       )),
-      // Category tabs - reactive to enabledCats
       Container(
         color: bg,
         child: TabBar(
@@ -320,11 +318,14 @@ class _Feed extends ConsumerStatefulWidget {
 
 class _FeedState extends ConsumerState<_Feed> {
   bool _fetchingLabel = false;
+  bool _loadingMore = false;
+  List<BlogPost> _posts = [];
+  int _page = 1;
+  static const int _pageSize = 10;
 
   @override
   void initState() {
     super.initState();
-    // Pre-fetch category-specific posts from API when tab is first opened
     if (widget.label != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _fetchForLabel());
     }
@@ -340,6 +341,28 @@ class _FeedState extends ConsumerState<_Feed> {
     if (mounted) setState(() => _fetchingLabel = false);
   }
 
+  Future<void> _loadMore() async {
+    if (_loadingMore || widget.label != null) return;
+    if (_posts.length < _pageSize * _page) return;
+    
+    setState(() => _loadingMore = true);
+    try {
+      final more = await ref.read(blogRepositoryProvider).loadMorePosts(
+        maxResults: _pageSize,
+        afterDate: _posts.isNotEmpty ? _posts.last.published : null,
+      );
+      if (mounted) {
+        setState(() {
+          _posts = [..._posts, ...more.where((p) => !_posts.any((e) => e.postId == p.postId))];
+          _page++;
+          _loadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingMore = false);
+    }
+  }
+
   Widget _buildView(ViewMode mode, List<BlogPost> posts) {
     switch (mode) {
       case ViewMode.list:
@@ -353,21 +376,6 @@ class _FeedState extends ConsumerState<_Feed> {
             onTap: () => widget.onOpenDetail(ctx, posts[i].postId),
           ),
         );
-      case ViewMode.grid:
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
-          ),
-          itemCount: posts.length,
-          itemBuilder: (ctx, i) => PostCard(
-            post: posts[i],
-            onTap: () => widget.onOpenDetail(ctx, posts[i].postId),
-          ),
-        );
       case ViewMode.cards:
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -375,7 +383,7 @@ class _FeedState extends ConsumerState<_Feed> {
           separatorBuilder: (ctx, i) => const SizedBox(height: 16),
           itemBuilder: (ctx, i) => PostCard(
             post: posts[i],
-            featured: true, // Make all cards featured for "cards" mode
+            featured: true,
             onTap: () => widget.onOpenDetail(ctx, posts[i].postId),
           ),
         );
@@ -432,16 +440,27 @@ class _FeedState extends ConsumerState<_Feed> {
         }
 
         final viewMode = ref.watch(settingsProvider).viewMode;
-        return RefreshIndicator(
-          color: AppTheme.primary,
-          onRefresh: () async {
-            if (widget.label != null) {
-              await _fetchForLabel();
-            } else {
-              ref.read(blogPostsProvider.notifier).refreshPosts();
+        return NotificationListener<ScrollNotification>(
+          onNotification: (scrollNotification) {
+            if (scrollNotification is ScrollEndNotification) {
+              final metrics = scrollNotification.metrics;
+              if (metrics.extentAfter == 0 && !_loadingMore) {
+                _loadMore();
+              }
             }
+            return false;
           },
-          child: _buildView(viewMode, posts),
+          child: RefreshIndicator(
+            color: AppTheme.primary,
+            onRefresh: () async {
+              if (widget.label != null) {
+                await _fetchForLabel();
+              } else {
+                ref.read(blogPostsProvider.notifier).refreshPosts();
+              }
+            },
+            child: _buildView(viewMode, posts),
+          ),
         );
       },
     );

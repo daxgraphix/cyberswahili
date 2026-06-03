@@ -73,7 +73,7 @@ dependencies:
   # Shared preferences for persisting theme mode and app settings
   shared_preferences: ^2.2.3
 
-  # Keep screen awake (replaces discontinued wakelock)
+# Keep screen awake (replaces discontinued wakelock)
   wakelock_plus: ^1.5.2
 
 dev_dependencies:

@@ -1,15 +1,11 @@
+import 'dart:async';
 import '../models/blog_post.dart';
 import '../services/blogger_api_service.dart';
 import '../services/database_service.dart';
 
-/// Repository for managing blog posts with offline-first caching.
-/// Handles fetching from Blogger API, local storage with Isar,
-/// and provides methods for posts, categories, and individual articles.
 class BlogRepository {
   final BloggerApiService _api;
   BlogRepository(this._api);
-
-  // ── Public API ─────────────────────────────────────────────────────────────
 
   Future<List<BlogPost>> getPosts(
       {int maxResults = 20, bool forceRefresh = false}) async {
@@ -18,8 +14,8 @@ class BlogRepository {
     final sortedCache = _sortByDate(cached);
 
     if (sortedCache.isNotEmpty && !forceRefresh) {
-      _refreshInBackground(maxResults); // keep cache fresh silently
-      return sortedCache;
+      _refreshInBackground(maxResults);
+      return sortedCache.take(maxResults).toList();
     }
 
     try {
@@ -27,9 +23,27 @@ class BlogRepository {
       await _upsert(fresh);
       return _sortByDate(fresh);
     } catch (e) {
-      if (sortedCache.isNotEmpty) return sortedCache; // serve stale on failure
+      if (sortedCache.isNotEmpty) return sortedCache.take(maxResults).toList();
       rethrow;
     }
+  }
+
+  Future<List<BlogPost>> loadMorePosts({
+    int maxResults = 20,
+    DateTime? afterDate,
+  }) async {
+    final isar = await DatabaseService.isar;
+    final all = await isar.blogPosts.buildQuery<BlogPost>().findAll();
+    final sorted = _sortByDate(List.from(all));
+    
+    if (afterDate != null) {
+      final hasMore = sorted.any((p) => p.published.isBefore(afterDate));
+      return hasMore
+          ? sorted.skipWhile((p) => p.published.isAfter(afterDate)).take(maxResults).toList()
+          : [];
+    }
+    
+    return sorted.take(maxResults).toList();
   }
 
   Future<BlogPost> getPostById(String postId) async {
@@ -41,7 +55,6 @@ class BlogRepository {
       return cached;
     }
 
-    // Fallback: fetch from API directly
     final content = await _api.fetchPostContent(postId);
     throw Exception(
         'Post not in cache. Refresh the feed first.\nDetail: $content');
@@ -49,7 +62,6 @@ class BlogRepository {
 
   Future<List<BlogPost>> getPostsByLabel(String label,
       {int maxResults = 50}) async {
-    // Fetch all posts (cached or fresh) and filter locally to ensure we get posts even if labels don't match API filter
     final all = await getPosts(forceRefresh: false, maxResults: 100);
     final filtered = _sortByDate(all
         .where(
@@ -60,12 +72,10 @@ class BlogRepository {
         .toList());
 
     if (filtered.isNotEmpty) {
-      // Background refresh to keep cache updated
       _refreshByLabelInBackground(label, maxResults);
       return filtered;
     }
 
-    // If still empty after refresh, try fetching more
     final freshAll = await getPosts(forceRefresh: true, maxResults: 200);
     return _sortByDate(freshAll
         .where(
@@ -81,8 +91,6 @@ class BlogRepository {
     await isar.writeTxn(() => isar.blogPosts.clear());
   }
 
-  // ── Private helpers ────────────────────────────────────────────────────────
-
   List<BlogPost> _sortByDate(List<BlogPost> posts) =>
       posts..sort((a, b) => b.published.compareTo(a.published));
 
@@ -93,7 +101,6 @@ class BlogRepository {
         final existing = await isar.blogPosts.getByPostId(post.postId);
         if (existing != null) {
           post.id = existing.id;
-          // preserve cached content if we don't have new content
           if (!post.isContentCached && existing.isContentCached) {
             post.content = existing.content;
             post.isContentCached = true;
