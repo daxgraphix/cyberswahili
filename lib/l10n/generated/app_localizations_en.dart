@@ -375,8 +375,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keepUpdatedDesc => 'Refresh regularly to get new articles';
 
   @override
-  String get viewReports => 'View Reports';
+  String get viewByCategory => 'View by Category';
 
   @override
-  String get reportsDesc => 'Check statistics of articles you\'ve read';
+  String get analytics => 'Analytics';
+
+  @override
+  String get weeklyTrend => 'Weekly Trend';
+
+  @override
+  String get distribution => 'Distribution';
+
+  @override
+  String get noCategoryData => 'No category data yet';
+
+  @override
+  String get noArticlesRead => 'No articles read yet';
+
+  @override
+  String get noFavourites => 'No favourites yet';
+
+  @override
+  String get noInsights => 'No insights available yet';
 }

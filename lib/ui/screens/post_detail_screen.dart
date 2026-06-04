@@ -95,7 +95,7 @@ class _ArticleBodyState extends State<_ArticleBody> {
                 ? FlexibleSpaceBar(
                     background: Stack(fit: StackFit.expand, children: [
                       CachedNetworkImage(
-                        imageUrl: post.thumbnailUrl!,
+                        imageUrl: post.thumbnailUrl ?? '',
                         fit: BoxFit.cover,
                         placeholder: (ctx, url) => Container(color: cs.surfaceContainerHighest),
                         errorWidget: (ctx, url, err) => Container(color: cs.surfaceContainerHighest),

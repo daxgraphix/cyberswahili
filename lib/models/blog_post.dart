@@ -54,6 +54,8 @@ class BlogPost {
     this.author,
     this.isContentCached = false,
   });
+  
+  static const String _defaultImageUrl = 'https://cyberswahili.blogspot.com';
 
   // Factory method to create BlogPost from Blogger API JSON response
   // Maps API fields to local entity structure
@@ -78,11 +80,34 @@ class BlogPost {
     // Try to get from images array if available
     final images = json['images'] as List<dynamic>?;
     if (images != null && images.isNotEmpty) {
-      return images[0]['url'] as String?;
+      final firstImage = images[0];
+      if (firstImage is Map<String, dynamic>) {
+        final url = firstImage['url'] as String?;
+        if (url != null && url.isNotEmpty) return url;
+      }
     }
-    // Fallback: extract from content HTML (basic implementation)
-    // In production, consider more robust image extraction
-    return null;
+    
+    // Try to get from post's author/profile image
+    final author = json['author'] as Map<String, dynamic>?;
+    if (author != null) {
+      final displayName = author['displayName'] as String?;
+      if (displayName != null && displayName.isNotEmpty) {
+        return 'https://www.google.com/s2/photos/s120_c/${Uri.encodeComponent(displayName)}';
+      }
+    }
+    
+    // Fallback: extract first image from content HTML
+    final content = json['content'] as String?;
+    if (content != null) {
+      final imgRegex = RegExp(r'<img[^>]+src="([^"]+)"');
+      final match = imgRegex.firstMatch(content);
+      if (match != null && match.groupCount >= 1) {
+        return match.group(1);
+      }
+    }
+    
+    // Return default fallback
+    return _defaultImageUrl;
   }
 
   // Convert BlogPost to JSON for API serialization if needed

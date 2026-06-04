@@ -145,17 +145,9 @@ class S {
   String get weeklyTrend => sw ? 'Mbadala wa Wiki' : 'Weekly Trend';
   String get distribution => sw ? 'Ubambuzi' : 'Distribution';
   String get noCategoryData => sw ? 'Hakuna takwimu za kategoria' : 'No category data yet';
-  String get readingStreak => sw ? 'Moyoni wa Kusoma' : 'Reading Streak';
-  String get daysActive => sw ? 'siku zimefanya' : 'days active';
-  String get assessment => sw ? 'Takwimu ya Kusoma' : 'Reading Assessment';
-  String get booksRead => sw ? 'vitu vimebaki' : 'items read';
-  String get timeStats => sw ? 'Musanyiko' : 'Time Statistics';
-  String get daily => sw ? 'Lea' : 'Daily';
-  String get weekly => sw ? 'Wiki' : 'Weekly';
-  String get monthly => sw ? 'Mwezi' : 'Monthly';
-  String get todayRead => sw ? 'zilizosomwa leo' : 'read today';
-  String get thisWeek => sw ? 'kwa wiki' : 'this week';
-  String get thisMonth => sw ? 'kwa mwezi' : 'this month';
+  String get noArticlesRead => sw ? 'Hakuna makala zilizosomwa' : 'No articles read yet';
+  String get noFavourites => sw ? 'Hakuna vipendwa' : 'No favourites yet';
+  String get noInsights => sw ? 'Hakuna maarifa za sasa' : 'No insights available yet';
 
   // Settings sections
   String get secReports => sw ? 'RIPOTI' : 'REPORTS';
@@ -196,8 +188,12 @@ class S {
   String get kiswahili => sw ? 'Kiswahili' : 'Swahili';
   String get english => sw ? 'Kiingereza' : 'English';
 
-   // Categories page
-   String get chooseCategoriesPageTitle => sw ? 'Chagua Kategoria' : 'Choose Categories';
+  // App info
+  String get appName => sw ? 'CyberSwahili' : 'CyberSwahili';
+  String get appVersion => sw ? 'Toleo' : 'Version';
+
+  // Categories page
+  String get chooseCategoriesPageTitle => sw ? 'Chagua Kategoria' : 'Choose Categories';
 }
 
 final stringsProvider = Provider<S>((ref) {

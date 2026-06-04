@@ -120,6 +120,12 @@
   "saveMoreDesc": "Hujaweka makala nyingi. Bonyeza ikoni ya kitabu!",
   "keepUpdated": "Endelea Kujua",
   "keepUpdatedDesc": "Onyesha upya mara kwa mara kupata makala mpya",
-  "viewReports": "Onyesha Ripoti",
-  "reportsDesc": "Angalia takwimu za makala ulizosoma"
+  "viewByCategory": "Kwa Kategoria",
+  "analytics": "Vipengele",
+  "weeklyTrend": "Ripoti Ya Wiki",
+  "distribution": "Uchambuzi",
+  "noCategoryData": "Hakuna takwimu za kategoria",
+  "noArticlesRead": "Hakuna makala zilizosomwa",
+  "noFavourites": "Hakuna vipendwa",
+  "noInsights": "Hakuna maarifa za sasa"
 }

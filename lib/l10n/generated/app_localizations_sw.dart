@@ -372,8 +372,26 @@ class AppLocalizationsSw extends AppLocalizations {
   String get keepUpdatedDesc => 'Onyesha upya mara kwa mara kupata makala mpya';
 
   @override
-  String get viewReports => 'Onyesha Ripoti';
+  String get viewByCategory => 'Kwa Kategoria';
 
   @override
-  String get reportsDesc => 'Angalia takwimu za makala ulizosoma';
+  String get analytics => 'Vipengele';
+
+  @override
+  String get weeklyTrend => 'Ripoti Ya Wiki';
+
+  @override
+  String get distribution => 'Uchambuzi';
+
+  @override
+  String get noCategoryData => 'Hakuna takwimu za kategoria';
+
+  @override
+  String get noArticlesRead => 'Hakuna makala zilizosomwa';
+
+  @override
+  String get noFavourites => 'Hakuna vipendwa';
+
+  @override
+  String get noInsights => 'Hakuna maarifa za sasa';
 }

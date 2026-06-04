@@ -812,17 +812,53 @@ abstract class AppLocalizations {
   /// **'Onyesha upya mara kwa mara kupata makala mpya'**
   String get keepUpdatedDesc;
 
-  /// No description provided for @viewReports.
+  /// No description provided for @viewByCategory.
   ///
   /// In sw, this message translates to:
-  /// **'Onyesha Ripoti'**
-  String get viewReports;
+  /// **'Kwa Kategoria'**
+  String get viewByCategory;
 
-  /// No description provided for @reportsDesc.
+  /// No description provided for @analytics.
   ///
   /// In sw, this message translates to:
-  /// **'Angalia takwimu za makala ulizosoma'**
-  String get reportsDesc;
+  /// **'Vipengele'**
+  String get analytics;
+
+  /// No description provided for @weeklyTrend.
+  ///
+  /// In sw, this message translates to:
+  /// **'Ripoti Ya Wiki'**
+  String get weeklyTrend;
+
+  /// No description provided for @distribution.
+  ///
+  /// In sw, this message translates to:
+  /// **'Uchambuzi'**
+  String get distribution;
+
+  /// No description provided for @noCategoryData.
+  ///
+  /// In sw, this message translates to:
+  /// **'Hakuna takwimu za kategoria'**
+  String get noCategoryData;
+
+  /// No description provided for @noArticlesRead.
+  ///
+  /// In sw, this message translates to:
+  /// **'Hakuna makala zilizosomwa'**
+  String get noArticlesRead;
+
+  /// No description provided for @noFavourites.
+  ///
+  /// In sw, this message translates to:
+  /// **'Hakuna vipendwa'**
+  String get noFavourites;
+
+  /// No description provided for @noInsights.
+  ///
+  /// In sw, this message translates to:
+  /// **'Hakuna maarifa za sasa'**
+  String get noInsights;
 }
 
 class _AppLocalizationsDelegate

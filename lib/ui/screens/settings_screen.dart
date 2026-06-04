@@ -232,7 +232,7 @@ class SettingsScreen extends ConsumerWidget {
       const SizedBox(width: 12),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(s.settings, style: const TextStyle(fontWeight: FontWeight.w700)),
-        Text('CyberSwahili v1.0.0', style: Theme.of(context).textTheme.bodySmall),
+        Text('${s.appName} ${s.appVersion} v1.0.0', style: Theme.of(context).textTheme.bodySmall),
       ]),
     ]),
   );

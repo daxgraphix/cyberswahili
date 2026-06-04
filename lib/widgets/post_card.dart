@@ -199,12 +199,13 @@ class _Thumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (url != null && url!.isNotEmpty) {
       return CachedNetworkImage(
         imageUrl: url!,
         fit: BoxFit.cover,
         placeholder: (ctx, url) => Container(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: cs.surfaceContainerHighest,
             child: const Center(child: SizedBox(width: 20, height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2)))),
         errorWidget: (ctx, url, err) => _placeholder(context),

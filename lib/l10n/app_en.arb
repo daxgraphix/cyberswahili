@@ -120,6 +120,14 @@
   "saveMoreDesc": "You haven't saved many articles. Tap the bookmark icon!",
   "keepUpdated": "Keep Updated",
   "keepUpdatedDesc": "Refresh regularly to get new articles",
+  "viewByCategory": "View by Category",
+  "analytics": "Analytics",
+  "weeklyTrend": "Weekly Trend",
+  "distribution": "Distribution",
+  "noCategoryData": "No category data yet",
+  "noArticlesRead": "No articles read yet",
+  "noFavourites": "No favourites yet",
+  "noInsights": "No insights available yet",
   "viewReports": "View Reports",
   "reportsDesc": "Check statistics of articles you've read"
 }
