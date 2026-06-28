@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'services/database_service.dart';
+import 'services/notification_service.dart';
 import 'ui/screens/home_screen.dart';
 import 'ui/theme/app_theme.dart';
 import 'providers/app_providers.dart';
@@ -30,6 +31,9 @@ void main() async {
   try { await DatabaseService.isar; }
   catch (e) { debugPrint('Warning: DB init failed: $e'); }
 
+  try { await NotificationService.init(); }
+  catch (e) { debugPrint('Warning: Notification init failed: $e'); }
+
   runApp(
     ProviderScope(
       overrides: [sharedPrefsProvider.overrideWithValue(prefs)],
@@ -40,16 +44,34 @@ void main() async {
 
 /// Root widget for the CyberSwahili app.
 /// Manages theme, localization, and text scaling based on user settings.
-class CyberSwahiliApp extends ConsumerWidget {
+class CyberSwahiliApp extends ConsumerStatefulWidget {
   const CyberSwahiliApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CyberSwahiliApp> createState() => _CyberSwahiliAppState();
+}
+
+class _CyberSwahiliAppState extends ConsumerState<CyberSwahiliApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupNotifications();
+  }
+
+  void _setupNotifications() {
+    NotificationService.setNavigatorKey(_navigatorKey);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
     final settings  = ref.watch(settingsProvider);
     final locale = settings.swahiliFirst ? const Locale('sw') : const Locale('en');
 
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'CyberSwahili',
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,

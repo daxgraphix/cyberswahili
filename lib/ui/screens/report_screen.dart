@@ -5,20 +5,20 @@ import 'package:cyberswahili/providers/blog_providers.dart';
 import 'package:cyberswahili/providers/strings_provider.dart';
 import 'package:cyberswahili/models/blog_post.dart';
 
-class ReportScreen extends StatefulWidget {
+class ReportScreen extends ConsumerStatefulWidget {
   const ReportScreen({super.key});
 
   @override
-  State<ReportScreen> createState() => _ReportScreenState();
+  ConsumerState<ReportScreen> createState() => _ReportScreenState();
 }
 
-class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderStateMixin {
+class _ReportScreenState extends ConsumerState<ReportScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -29,451 +29,594 @@ class _ReportScreenState extends State<ReportScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, child) {
-        final s = ref.watch(stringsProvider);
-        final readArticles = ref.watch(readArticlesProvider);
-        final favCount = ref.watch(favouritesProvider).length;
-        final asyncPosts = ref.watch(blogPostsProvider);
-        final cs = Theme.of(context).colorScheme;
+    final s = ref.watch(stringsProvider);
+    final cs = Theme.of(context).colorScheme;
 
-        return Scaffold(
-          backgroundColor: cs.surface,
-          body: SafeArea(
-            child: Column(children: [
-              AppBar(
-                title: Text(s.reports, style: const TextStyle(fontWeight: FontWeight.w700)),
-                elevation: 0,
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(60),
-                  child: Container(
-                    color: cs.surface,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        TabBar(
-                          controller: _tabController,
-                          tabs: [
-                            _TabWithBadge(text: s.readingReport, count: readArticles.length),
-                            Tab(text: s.insights),
-                            Tab(text: s.analytics),
-                          ],
-                          labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
-                        ),
-                      ],
-                    ),
+    return Scaffold(
+      backgroundColor: cs.surface,
+      appBar: AppBar(
+        title: Text(s.reports),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          onPressed: () => Navigator.pop(context),
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: cs.primary,
+          labelColor: cs.primary,
+          unselectedLabelColor: cs.onSurface.withValues(alpha: 0.5),
+          indicatorSize: TabBarIndicatorSize.label,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          tabs: [
+            Tab(text: s.readingReport),
+            Tab(text: s.interests),
+            Tab(text: s.achievements),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _OverviewTab(),
+          _InterestsTab(),
+          _AchievementsTab(),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverviewTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
+    final readArticles = ref.watch(readArticlesProvider);
+    final asyncPosts = ref.watch(blogPostsProvider);
+
+    return asyncPosts.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) {
+        final isOffline = e.toString().contains('SocketException') || 
+                         e.toString().contains('host lookup') || 
+                         e.toString().contains('Network is unreachable');
+
+        return Center(child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(isOffline ? Icons.wifi_off_rounded : Icons.error_outline_rounded, size: 48, color: Colors.redAccent.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
+            Text(isOffline ? s.deviceOffline : s.networkErr, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(isOffline ? s.offlineMessage : e.toString(), textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+          ]),
+        ));
+      },
+      data: (posts) {
+        final today = DateTime.now();
+        final readToday = readArticles.values.where((d) => 
+          d.year == today.year && d.month == today.month && d.day == today.day).length;
+        
+        const dailyGoal = 3;
+        final goalProgress = (readToday / dailyGoal).clamp(0.0, 1.0);
+
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            _SectionTitle(s.dailyGoal),
+            const SizedBox(height: 12),
+            _GoalCard(
+              progress: goalProgress,
+              current: readToday,
+              goal: dailyGoal,
+              s: s,
+            ),
+            const SizedBox(height: 32),
+            _SectionTitle(s.activity),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatTile(
+                    label: s.articlesRead,
+                    value: readArticles.length.toString(),
+                    icon: Icons.auto_stories_rounded,
+                    color: Colors.blue,
                   ),
                 ),
-              ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildReadingTab(context, ref, s, readArticles, favCount, asyncPosts, cs),
-                    _buildInsightsTab(context, ref, s, readArticles, asyncPosts, cs),
-                    _buildAnalyticsTab(context, ref, s, readArticles, asyncPosts, cs),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StatTile(
+                    label: s.readingStreak,
+                    value: s.daysCount(_computeStreak(readArticles.values)),
+                    icon: Icons.local_fire_department_rounded,
+                    color: Colors.orange,
+                  ),
                 ),
-              ),
-            ]),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildReadingTab(BuildContext context, WidgetRef ref, S s,
-      Set<String> readArticles, int favCount, AsyncValue<List> asyncPosts, ColorScheme cs) {
-    return asyncPosts.when(
-      loading: () => const _LoadingState(),
-      error: (e, _) => _ErrorState(message: e.toString(), onRetry: () => ref.read(blogPostsProvider.notifier).loadPosts()),
-      data: (posts) {
-        final blogPosts = posts.cast<BlogPost>();
-        final allPosts = blogPosts.length;
-        final readCount = readArticles.length;
-        final readPercentage = allPosts > 0 ? (readCount / allPosts * 100).round() : 0;
-
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _HeaderCard(
-              icon: Icons.analytics_rounded,
-              iconColor: cs.primary,
-              title: s.readingReport,
-              subtitle: s.reportSubtitle,
+              ],
             ),
-            const SizedBox(height: 24),
-            Row(mainAxisSize: MainAxisSize.max, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Expanded(child: _StatCard(icon: Icons.article_rounded, iconColor: Colors.blue, title: s.totalArticles, value: allPosts.toString(), subtitle: s.availableArticles, onTap: () => _showAllArticles(context, blogPosts, s))),
-              Expanded(child: _StatCard(icon: Icons.visibility_rounded, iconColor: Colors.green, title: s.articlesRead, value: readCount.toString(), subtitle: '$readPercentage% ${s.ofTotal}', onTap: () => _showReadArticles(context, readArticles, blogPosts, s))),
-            ]),
+            const SizedBox(height: 32),
+            _SectionTitle(s.weeklyTrend),
             const SizedBox(height: 12),
-            Row(mainAxisSize: MainAxisSize.max, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Expanded(child: _StatCard(icon: Icons.bookmark_rounded, iconColor: Colors.orange, title: s.favourited, value: favCount.toString(), subtitle: s.savedForLater, onTap: () => _showFavourites(context, favCount, s))),
-              Expanded(child: _StatCard(icon: Icons.trending_up_rounded, iconColor: Colors.purple, title: s.engagement, value: readCount > 0 ? '${(favCount / readCount * 100).round()}%' : '0%', subtitle: s.favRate, onTap: () => _showEngagementDetail(context, readCount, favCount, s))),
-            ]),
-            const SizedBox(height: 24),
-            Text(s.insights, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 16),
-            _InsightCard(icon: Icons.lightbulb_rounded, iconColor: Colors.amber, title: readPercentage >= 50 ? s.greatReader : readPercentage >= 25 ? s.goodReader : s.startReading, description: readPercentage >= 50 ? s.greatReaderDesc : readPercentage >= 25 ? s.goodReaderDesc : s.startReadingDesc),
-            const SizedBox(height: 12),
-            _InsightCard(icon: Icons.bookmark_border_rounded, iconColor: Colors.teal, title: favCount >= 10 ? s.activeSaver : favCount >= 5 ? s.moderateSaver : s.saveMore, description: favCount >= 10 ? s.activeSaverDesc : favCount >= 5 ? s.moderateSaverDesc : s.saveMoreDesc),
-            const SizedBox(height: 12),
-            _InsightCard(icon: Icons.refresh_rounded, iconColor: Colors.indigo, title: s.keepUpdated, description: s.keepUpdatedDesc),
+            _WeeklyChart(readArticles: readArticles, s: s),
+            const SizedBox(height: 32),
+            OutlinedButton(
+              onPressed: () => _showClearConfirm(context, ref, s),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.redAccent,
+                side: const BorderSide(color: Colors.redAccent, width: 0.5),
+              ),
+              child: Text(s.clearReadHistory),
+            ),
           ],
         );
       },
     );
   }
 
-  Widget _buildInsightsTab(BuildContext context, WidgetRef ref, S s,
-      Set<String> readArticles, AsyncValue<List> asyncPosts, ColorScheme cs) {
+  int _computeStreak(Iterable<DateTime> readDates) {
+    final days = readDates.map((d) => DateTime(d.year, d.month, d.day)).toSet().toList()
+      ..sort((a, b) => b.compareTo(a));
+    if (days.isEmpty) return 0;
+    
+    var streak = 0;
+    var cursor = DateTime.now();
+    cursor = DateTime(cursor.year, cursor.month, cursor.day);
+    
+    if (!days.contains(cursor)) {
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+
+    while (days.contains(cursor)) {
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    return streak;
+  }
+
+  void _showClearConfirm(BuildContext context, WidgetRef ref, S s) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(s.clearReadHistory),
+        content: Text(s.clearReadHistorySub),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(s.cancel)),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(readArticlesProvider.notifier).clearAll();
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: Text(s.proceed),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InterestsTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
+    final readArticles = ref.watch(readArticlesProvider);
+    final asyncPosts = ref.watch(blogPostsProvider);
+
     return asyncPosts.when(
-      loading: () => const _LoadingState(),
-      error: (e, _) => _ErrorState(message: e.toString(), onRetry: () => ref.read(blogPostsProvider.notifier).loadPosts()),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) {
+        final isOffline = e.toString().contains('SocketException') || 
+                         e.toString().contains('host lookup') || 
+                         e.toString().contains('Network is unreachable');
+
+        return Center(child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(isOffline ? Icons.wifi_off_rounded : Icons.error_outline_rounded, size: 48, color: Colors.redAccent.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
+            Text(isOffline ? s.deviceOffline : s.networkErr, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(isOffline ? s.offlineMessage : e.toString(), textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+          ]),
+        ));
+      },
       data: (posts) {
         final blogPosts = posts.cast<BlogPost>();
-        final categoryStats = _computeCategoryStats(blogPosts, readArticles);
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(s.viewByCategory, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 16),
-            if (categoryStats.isEmpty)
-              _EmptyState(text: s.noCategoryData),
-            ...categoryStats.entries.map((e) => _CategoryTile(category: e.key, readCount: e.value['read'] ?? 0, totalCount: e.value['total'] ?? 0, s: s)),
-          ],
+        final stats = _computeCategoryStats(blogPosts, readArticles.keys.toSet());
+        final sortedKeys = stats.keys.toList()
+          ..sort((a, b) => (stats[b]!['read'] ?? 0).compareTo(stats[a]!['read'] ?? 0));
+
+        if (sortedKeys.isEmpty) {
+          return Center(child: Text(s.noCategoryData));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(20),
+          itemCount: sortedKeys.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _SectionTitle(s.viewByCategory),
+              );
+            }
+            final cat = sortedKeys[index - 1];
+            final read = stats[cat]!['read']!;
+            final total = stats[cat]!['total']!;
+            return _InterestTile(category: cat, read: read, total: total);
+          },
         );
       },
     );
   }
 
-  Widget _buildAnalyticsTab(BuildContext context, WidgetRef ref, S s,
-      Set<String> readArticles, AsyncValue<List> asyncPosts, ColorScheme cs) {
-    return asyncPosts.when(
-      loading: () => const _LoadingState(),
-      error: (e, _) => _ErrorState(message: e.toString(), onRetry: () => ref.read(blogPostsProvider.notifier).loadPosts()),
-      data: (posts) {
-        final blogPosts = posts.cast<BlogPost>();
-        final weekly = _computeWeekly(blogPosts, readArticles);
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(s.weeklyTrend, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 16),
-            _WeeklyChart(posts: blogPosts, readArticles: readArticles, weekly: weekly, cs: cs, s: s),
-            const SizedBox(height: 24),
-            Text(s.distribution, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 16),
-            ..._computeCategoryStats(blogPosts, readArticles).entries.map((e) => _ProgressBar(label: e.key, value: e.value['total']! > 0 ? (e.value['read']! / e.value['total']!) : 0)),
-          ],
-        );
-      },
-    );
-  }
-
-  Map<String, Map<String, int>> _computeCategoryStats(List<BlogPost> posts, Set<String> readArticles) {
+  Map<String, Map<String, int>> _computeCategoryStats(List<BlogPost> posts, Set<String> readIds) {
     final stats = <String, Map<String, int>>{};
     for (final post in posts) {
-      final labels = post.labels;
-      for (final label in labels) {
+      for (final label in post.labels) {
         stats.putIfAbsent(label, () => {'read': 0, 'total': 0});
         stats[label]!['total'] = stats[label]!['total']! + 1;
-        if (readArticles.contains(post.postId)) {
+        if (readIds.contains(post.postId)) {
           stats[label]!['read'] = stats[label]!['read']! + 1;
         }
       }
     }
     return stats;
   }
-
-  List<double> _computeWeekly(List<BlogPost> posts, Set<String> readArticles) {
-    final w = List.filled(7, 0.0);
-    for (final p in posts) {
-      if (readArticles.contains(p.postId)) {
-        final d = p.published.weekday - 1;
-        w[d] = w[d] + 1;
-      }
-    }
-    return w;
-  }
 }
 
-class _TabWithBadge extends StatelessWidget {
-  final String text;
-  final int count;
-  const _TabWithBadge({required this.text, required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Text(text, style: const TextStyle(fontWeight: FontWeight.w700)),
-      if (count > 0) ...[
-        const SizedBox(width: 8),
-        Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: cs.primary, borderRadius: BorderRadius.circular(10)), child: Text('$count', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700))),
-      ],
-    ]);
-  }
-}
-
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      CircularProgressIndicator(color: cs.primary),
-      const SizedBox(height: 16),
-      Text('Inapakia...', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))),
-    ]));
-  }
-}
-
-class _ErrorState extends ConsumerWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorState({required this.message, required this.onRetry});
-
+class _AchievementsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
     final s = ref.watch(stringsProvider);
-    return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Icon(Icons.error_outline, color: cs.error, size: 48),
-      const SizedBox(height: 12),
-      Text(s.networkErr, style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 8),
-      Text(message, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))),
-      const SizedBox(height: 16),
-      ElevatedButton(onPressed: onRetry, child: Text(s.tryAgain)),
-    ])));
+    final readCount = ref.watch(readArticlesProvider).length;
+    final favCount = ref.watch(favouritesProvider).length;
+
+    final badges = [
+      _BadgeData(
+        title: s.badgeNewReader,
+        desc: s.badgeNewReaderDesc,
+        icon: Icons.auto_awesome_rounded,
+        unlocked: readCount >= 1,
+        color: Colors.amber,
+      ),
+      _BadgeData(
+        title: s.badgeTechLover,
+        desc: s.badgeTechLoverDesc,
+        icon: Icons.bolt_rounded,
+        unlocked: readCount >= 10,
+        color: Colors.blue,
+      ),
+      _BadgeData(
+        title: s.badgeCollector,
+        desc: s.badgeCollectorDesc,
+        icon: Icons.bookmark_rounded,
+        unlocked: favCount >= 5,
+        color: Colors.teal,
+      ),
+      _BadgeData(
+        title: s.badgePowerReader,
+        desc: s.badgePowerReaderDesc,
+        icon: Icons.workspace_premium_rounded,
+        unlocked: readCount >= 50,
+        color: Colors.purple,
+      ),
+    ];
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(20),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: badges.length,
+      itemBuilder: (context, index) => _BadgeCard(data: badges[index]),
+    );
   }
 }
 
-class _HeaderCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
+class _SectionTitle extends StatelessWidget {
   final String title;
-  final String subtitle;
-  const _HeaderCard({required this.icon, required this.iconColor, required this.title, required this.subtitle});
+  const _SectionTitle(this.title);
+  @override
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    child: Text(
+      title.toUpperCase(),
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+        letterSpacing: 1.2,
+      ),
+    ),
+  );
+}
+
+class _GoalCard extends StatelessWidget {
+  final double progress;
+  final int current, goal;
+  final S s;
+  const _GoalCard({required this.progress, required this.current, required this.goal, required this.s});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(20), border: Border.all(color: cs.primary.withValues(alpha: 0.15))), child: Row(children: [
-      Container(width: 56, height: 56, decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: iconColor, size: 24)),
-      const SizedBox(width: 16),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)), Text(subtitle, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6)))])),
-    ]));
-  }
-}
+    final done = progress >= 1.0;
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String value;
-  final String subtitle;
-  final VoidCallback? onTap;
-  const _StatCard({required this.icon, required this.iconColor, required this.title, required this.value, required this.subtitle, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
+    return Semantics(
+      label: done ? s.goalReached : s.keepReading,
+      value: '$current ${s.sw ? 'kati ya' : 'of'} $goal ${s.articles}',
       child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(16)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(width: 40, height: 40, decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: iconColor, size: 20)),
-          const SizedBox(height: 12),
-          Text(value, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, color: cs.primary)),
-          const SizedBox(height: 4),
-          Text(title, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.7))),
-          Text(subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.5))),
-        ]),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: cs.primary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: cs.primary.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                ExcludeSemantics(
+                  child: Container(
+                    width: 50, height: 50,
+                    decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+                    child: Icon(done ? Icons.emoji_events_rounded : Icons.track_changes_rounded, color: cs.primary),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(done ? s.goalReached : s.keepReading,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                      Text('$current / $goal ${s.articles}', style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 10,
+                backgroundColor: cs.primary.withValues(alpha: 0.1),
+                valueColor: AlwaysStoppedAnimation(cs.primary),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-void _showAllArticles(BuildContext context, List<BlogPost> posts, S s) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-    builder: (_) => Container(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(s.totalArticles, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-        const SizedBox(height: 16),
-        ...posts.map((p) => ListTile(title: Text(p.title, maxLines: 2, overflow: TextOverflow.ellipsis))),
-      ]),
-    ),
-  );
-}
-
-void _showReadArticles(BuildContext context, Set<String> readArticles, List<BlogPost> posts, S s) {
-  final readPosts = posts.where((p) => readArticles.contains(p.postId)).toList();
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-    builder: (_) => Container(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(s.articlesRead, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-        const SizedBox(height: 16),
-        if (readPosts.isEmpty) Center(child: Text(s.noArticlesRead)),
-        ...readPosts.map((p) => ListTile(title: Text(p.title, maxLines: 2, overflow: TextOverflow.ellipsis))),
-      ]),
-    ),
-  );
-}
-
-void _showFavourites(BuildContext context, int favCount, S s) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-    builder: (_) => Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.bookmark_rounded, size: 48, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 12),
-        Text(s.favourited, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-        const SizedBox(height: 8),
-        Text('$favCount ${s.savedForLater}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
-      ]),
-    ),
-  );
-}
-
-void _showEngagementDetail(BuildContext context, int readCount, int favCount, S s) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-    builder: (_) => Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(s.engagement, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-        const SizedBox(height: 16),
-        _EngagementBar(label: s.articlesRead, value: readCount.toDouble()),
-        const SizedBox(height: 8),
-        _EngagementBar(label: s.favourited, value: readCount > 0 ? favCount / readCount : 0),
-        const SizedBox(height: 8),
-        _EngagementBar(label: s.favRate, value: readCount > 0 ? favCount / readCount : 0),
-      ]),
-    ),
-  );
-}
-
-class _InsightCard extends StatelessWidget {
+class _StatTile extends StatelessWidget {
+  final String label, value;
   final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String description;
-  const _InsightCard({required this.icon, required this.iconColor, required this.title, required this.description});
+  final Color color;
+  const _StatTile({required this.label, required this.value, required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(16)), child: Row(children: [
-      Container(width: 44, height: 44, decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: iconColor, size: 20)),
-      const SizedBox(width: 16),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)), const SizedBox(height: 4), Text(description, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7), fontSize: 12))])),
-    ]));
+    return Semantics(
+      label: label,
+      value: value,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: cs.outline.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ExcludeSemantics(child: Icon(icon, color: color, size: 20)),
+            const SizedBox(height: 12),
+            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    );
   }
 }
 
-class _EngagementBar extends StatelessWidget {
-  final String label;
-  final double value;
-  const _EngagementBar({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(mainAxisSize: MainAxisSize.min, children: [Text(label, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7))), Text(' ${(value * 100).toInt()}%', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w700))]),
-      const SizedBox(height: 4),
-      LinearProgressIndicator(value: value.clamp(0, 1), backgroundColor: cs.outline),
-    ]);
-  }
-}
-
-class _CategoryTile extends StatelessWidget {
-  final String category;
-  final int readCount;
-  final int totalCount;
+class _WeeklyChart extends StatelessWidget {
+  final Map<String, DateTime> readArticles;
   final S s;
-  const _CategoryTile({required this.category, required this.readCount, required this.totalCount, required this.s});
+  const _WeeklyChart({required this.readArticles, required this.s});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final pct = totalCount > 0 ? readCount / totalCount : 0.0;
-    return GestureDetector(onTap: () {}, child: Container(margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(16)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Text(category, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)), const Spacer(), Text('$readCount/$totalCount', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6)))]),
-      const SizedBox(height: 8),
-      LinearProgressIndicator(value: pct, backgroundColor: cs.outline, borderRadius: BorderRadius.circular(4)),
-    ])));
-  }
-}
+    final now = DateTime.now();
+    final counts = List.generate(7, (index) {
+      final day = now.subtract(Duration(days: 6 - index));
+      return readArticles.values.where((d) => 
+        d.year == day.year && d.month == day.month && d.day == day.day).length;
+    });
 
-class _WeeklyChart extends ConsumerWidget {
-  final List<BlogPost> posts;
-  final Set<String> readArticles;
-  final List<double> weekly;
-  final ColorScheme cs;
-  final S s;
-  const _WeeklyChart({required this.posts, required this.readArticles, required this.weekly, required this.cs, required this.s});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final maxVal = weekly.isNotEmpty ? weekly.reduce((a, b) => a > b ? a : b) : 1.0;
-    final swahili = ref.watch(settingsProvider).swahiliFirst;
-    final days = swahili ? ['Jumatatu', 'Jumanne', 'Jumatano', 'Alahamisi', 'Ijumaa', 'Jumamosi', 'Jumapili'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final maxVal = counts.reduce((a, b) => a > b ? a : b).toDouble();
+    final days = s.sw 
+      ? ['J3', 'J4', 'JT', 'AL', 'IJ', 'JM', 'JP']
+      : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     
-    return Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(16)), child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: List.generate(7, (i) {
-      final h = maxVal > 0 ? weekly[i] / maxVal : 0.1;
-      final val = weekly[i];
-      return Column(children: [Container(width: 8, height: 80 * h, decoration: BoxDecoration(color: cs.primary, borderRadius: BorderRadius.circular(4))), const SizedBox(height: 4), Text(days[i], style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6), fontSize: 10)), Text('${val.toInt()}', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w600))]);
-    })));
+    final dayNamesFull = s.sw
+      ? ['Jumatatu', 'Jumanne', 'Jumatano', 'Alhamisi', 'Ijumaa', 'Jumamosi', 'Jumapili']
+      : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    return Container(
+      height: 180,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Semantics(
+        label: s.sw ? 'Grafu ya mwenendo wa wiki' : 'Weekly reading trend chart',
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: List.generate(7, (i) {
+            final h = maxVal > 0 ? (counts[i] / maxVal) : 0.05;
+            final dayName = dayNamesFull[i];
+            
+            return Semantics(
+              label: '$dayName: ${counts[i]} ${s.articles}',
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(counts[i].toString(), 
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    semanticsLabel: '', // Hide from screen reader as it's in the Column label
+                  ),
+                  const SizedBox(height: 4),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    width: 12,
+                    height: 80 * h + 5,
+                    decoration: BoxDecoration(
+                      color: i == 6 ? cs.primary : cs.primary.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(days[i], 
+                    style: const TextStyle(fontSize: 10),
+                    semanticsLabel: '', // Hide from screen reader
+                  ),
+                ],
+              ),
+            );
+          }),
+        ),
+      ),
+    );
   }
 }
 
-class _ProgressBar extends StatelessWidget {
-  final String label;
-  final double value;
-  const _ProgressBar({required this.label, required this.value});
+class _InterestTile extends StatelessWidget {
+  final String category;
+  final int read, total;
+  const _InterestTile({required this.category, required this.read, required this.total});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: Theme.of(context).textTheme.bodySmall),
-      const SizedBox(height: 4),
-      LinearProgressIndicator(value: value, backgroundColor: cs.outline, borderRadius: BorderRadius.circular(4)),
-    ]));
+    final pct = total > 0 ? read / total : 0.0;
+
+    return Semantics(
+      label: category,
+      value: '$read / $total articles read',
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Text(category, style: const TextStyle(fontWeight: FontWeight.w700)),
+                const Spacer(),
+                Text('$read / $total', style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: pct,
+                minHeight: 6,
+                backgroundColor: cs.outline.withValues(alpha: 0.2),
+                valueColor: AlwaysStoppedAnimation(cs.primary.withValues(alpha: 0.7)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final String text;
-  const _EmptyState({required this.text});
+class _BadgeCard extends StatelessWidget {
+  final _BadgeData data;
+  const _BadgeCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.bar_chart, color: cs.onSurface.withValues(alpha: 0.2), size: 48), const SizedBox(height: 12), Text(text, style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6)))]);
+    return Semantics(
+      label: data.title,
+      hint: data.desc,
+      value: data.unlocked ? 'Unlocked' : 'Locked',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: data.unlocked ? cs.surfaceContainerHighest : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: data.unlocked ? data.color.withValues(alpha: 0.3) : cs.outline.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ExcludeSemantics(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: data.unlocked ? data.color.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  data.icon, 
+                  color: data.unlocked ? data.color : Colors.grey.withValues(alpha: 0.5),
+                  size: 32,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              data.title, 
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.w700, 
+                fontSize: 14,
+                color: data.unlocked ? cs.onSurface : cs.onSurface.withValues(alpha: 0.4),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              data.desc,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                color: cs.onSurface.withValues(alpha: 0.4),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
+class _BadgeData {
+  final String title, desc;
+  final IconData icon;
+  final bool unlocked;
+  final Color color;
+  _BadgeData({required this.title, required this.desc, required this.icon, required this.unlocked, required this.color});
+}

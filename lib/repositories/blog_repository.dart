@@ -56,13 +56,42 @@ class BlogRepository {
     final cached = await isar.blogPosts.getByPostId(postId);
 
     if (cached != null) {
-      if (!cached.isContentCached) _fetchContentInBackground(cached);
+      if (!cached.isContentCached || cached.content.trim().isEmpty) {
+        try {
+          await _cachePostContent(cached);
+          // Return the updated object from DB to ensure content is present
+          return await isar.blogPosts.getByPostId(postId) ?? cached;
+        } catch (_) {
+          return cached;
+        }
+      }
       return cached;
     }
 
-    final content = await _api.fetchPostContent(postId);
-    throw Exception(
-        'Post not in cache. Refresh the feed first.\nDetail: $content');
+    try {
+      final fresh = await _api.fetchPost(postId);
+      fresh.isContentCached = fresh.content.trim().isNotEmpty;
+      await _upsert([fresh]);
+      return fresh;
+    } catch (e) {
+      throw Exception('Makala haijapatikana. Tafadhali hakikisha una mtandao.');
+    }
+  }
+
+  Future<Map<String, dynamic>> getCacheInfo() async {
+    final isar = await DatabaseService.isar;
+    final all = await isar.blogPosts.buildQuery<BlogPost>().findAll();
+    final cachedCount = all.where((p) => p.isContentCached).length;
+    
+    // Estimate size (very rough: ~10KB per full post, 1KB per metadata)
+    final totalBytes = (cachedCount * 10240) + ((all.length - cachedCount) * 1024);
+    final mb = totalBytes / (1024 * 1024);
+    
+    return {
+      'count': all.length,
+      'cached': cachedCount,
+      'size': mb.toStringAsFixed(2),
+    };
   }
 
   Future<List<BlogPost>> getPostsByLabel(String label, {int maxResults = 50}) async {
@@ -95,11 +124,40 @@ class BlogRepository {
     await isar.writeTxn(() => isar.blogPosts.clear());
   }
 
+  Future<List<BlogPost>> getCachedPosts() async {
+    final isar = await DatabaseService.isar;
+    final all = await isar.blogPosts.buildQuery<BlogPost>().findAll();
+    return _sortByDate(all.where((p) => p.isContentCached).toList());
+  }
+
+  Future<void> deleteFromCache(String postId) async {
+    final isar = await DatabaseService.isar;
+    final post = await isar.blogPosts.getByPostId(postId);
+    if (post != null) {
+      await isar.writeTxn(() async {
+        post.content = '';
+        post.isContentCached = false;
+        await isar.blogPosts.put(post);
+      });
+    }
+  }
+
+  Future<BlogPost> cachePostContent(String postId) async {
+    final isar = await DatabaseService.isar;
+    final cached = await isar.blogPosts.getByPostId(postId);
+    if (cached == null) return getPostById(postId);
+    if (cached.isContentCached && cached.content.trim().isNotEmpty) return cached;
+    await _cachePostContent(cached);
+    return cached;
+  }
+
   List<BlogPost> _sortByDate(List<BlogPost> posts) =>
       posts..sort((a, b) => b.published.compareTo(a.published));
 
-  Future<void> _upsert(List<BlogPost> posts) async {
+  Future<List<BlogPost>> _upsert(List<BlogPost> posts) async {
     final isar = await DatabaseService.isar;
+    final List<BlogPost> newPosts = [];
+    
     await isar.writeTxn(() async {
       for (final post in posts) {
         final existing = await isar.blogPosts.getByPostId(post.postId);
@@ -111,31 +169,35 @@ class BlogRepository {
           }
         } else {
           post.isContentCached = post.content.isNotEmpty;
+          newPosts.add(post);
         }
         await isar.blogPosts.put(post);
       }
     });
+    return newPosts;
   }
 
   void _refreshInBackground(int maxResults) {
-    _api.fetchPosts(maxResults: maxResults).then(_upsert).catchError((_) {});
+    _api.fetchPosts(maxResults: maxResults).then((posts) async {
+      await _upsert(posts);
+      // We can hook into a callback or stream here if we want to notify
+    }).catchError((_) {});
   }
 
   void _refreshByLabelInBackground(String label, int maxResults) {
     _api
         .fetchPostsByLabel(label, maxResults: maxResults)
-        .then(_upsert)
-        .catchError((_) {});
+        .then((posts) => _upsert(posts))
+        .catchError((_) => <BlogPost>[]);
   }
 
-  void _fetchContentInBackground(BlogPost post) {
-    _api.fetchPostContent(post.postId).then((content) async {
-      final isar = await DatabaseService.isar;
-      await isar.writeTxn(() async {
-        post.content = content;
-        post.isContentCached = true;
-        await isar.blogPosts.put(post);
-      });
-    }).catchError((_) {});
+  Future<void> _cachePostContent(BlogPost post) async {
+    final content = await _api.fetchPostContent(post.postId);
+    final isar = await DatabaseService.isar;
+    await isar.writeTxn(() async {
+      post.content = content;
+      post.isContentCached = content.trim().isNotEmpty;
+      await isar.blogPosts.put(post);
+    });
   }
 }

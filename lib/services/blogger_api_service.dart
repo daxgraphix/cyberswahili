@@ -34,6 +34,16 @@ class BloggerApiService {
     return data['nextPageToken'] as String?;
   }
 
+  Future<BlogPost> fetchPost(String postId) async {
+    final url = Uri.parse(
+      '$_base/blogs/$blogId/posts/$postId'
+      '?key=$apiKey'
+      '&fetchBodies=true',
+    );
+    final data = await _get(url);
+    return BlogPost.fromJson(data);
+  }
+
   Future<String> fetchPostContent(String postId) async {
     final url = Uri.parse(
       '$_base/blogs/$blogId/posts/$postId'

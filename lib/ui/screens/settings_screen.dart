@@ -6,6 +6,7 @@ import 'package:cyberswahili/providers/blog_providers.dart';
 import 'package:cyberswahili/providers/strings_provider.dart';
 import 'package:cyberswahili/ui/theme/app_theme.dart';
 import 'package:cyberswahili/ui/screens/report_screen.dart';
+import 'package:cyberswahili/ui/screens/offline_management_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   final bool embedded;
@@ -18,6 +19,12 @@ class SettingsScreen extends ConsumerWidget {
     final s         = ref.watch(stringsProvider);
     final isDark    = themeMode == ThemeMode.dark;
     final cs        = Theme.of(context).colorScheme;
+
+    final cacheInfo = ref.watch(cacheInfoProvider).value ?? {
+      'count': 0,
+      'cached': 0,
+      'size': '0.00',
+    };
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -91,6 +98,15 @@ class SettingsScreen extends ConsumerWidget {
                 val: settings.autoCache,
                 onChanged: (v) => ref.read(settingsProvider.notifier).setAutoCache(v),
               ),
+              _Div(),
+              _NavRow(
+                icon: Icons.folder_special_rounded,
+                iconColor: Colors.amber,
+                title: s.manageOffline,
+                sub: s.offlineManagementDesc,
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const OfflineManagementScreen())),
+              ),
             ]),
             const SizedBox(height: 20),
 
@@ -152,9 +168,12 @@ class SettingsScreen extends ConsumerWidget {
                 iconColor: cs.primary,
                 title: s.refreshArt,
                 sub: s.refreshSub,
-                onTap: () {
-                  ref.read(blogPostsProvider.notifier).refreshPosts();
+                onTap: () async {
                   _showSnackBar(context, s.refreshing, cs.primary);
+                  final ok = await ref.read(blogPostsProvider.notifier).refreshPosts();
+                  if (context.mounted) {
+                    _showSnackBar(context, ok ? s.refreshDone : s.refreshFailed, ok ? cs.primary : cs.error);
+                  }
                 },
               ),
               _Div(),
@@ -162,7 +181,7 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.delete_sweep_rounded,
                 iconColor: Colors.redAccent,
                 title: s.clearCache,
-                sub: s.clearCacheSub,
+                sub: '${s.clearCacheSub} (${cacheInfo['size']} MB)',
                 titleColor: Colors.redAccent,
                 onTap: () => _clearCache(context, ref, s),
               ),
@@ -202,15 +221,6 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ]),
             const SizedBox(height: 20),
-
-            _Sec(s.secAbout, Icons.info_rounded),
-            _Card([
-              _InfoRow(icon: Icons.newspaper_rounded, iconColor: cs.primary,
-                  title: 'CyberSwahili', sub: 'Habari za Teknolojia kwa Kiswahili'),
-              _Div(),
-              _InfoRow(icon: Icons.tag_rounded, iconColor: Colors.grey,
-                  title: s.sw ? 'Toleo' : 'Version', sub: 'v1.0.0 · Flutter'),
-            ]),
           ],
         ),
       ),
@@ -232,7 +242,7 @@ class SettingsScreen extends ConsumerWidget {
       const SizedBox(width: 12),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(s.settings, style: const TextStyle(fontWeight: FontWeight.w700)),
-        Text('${s.appName} ${s.appVersion} v1.0.0', style: Theme.of(context).textTheme.bodySmall),
+        Text(s.appDescription, style: Theme.of(context).textTheme.bodySmall),
       ]),
     ]),
   );
@@ -246,16 +256,21 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showSnackBar(BuildContext ctx, String msg, Color color) {
+    final isDark = Theme.of(ctx).brightness == Brightness.dark;
+    final bg = isDark ? Colors.white : const Color(0xFF161616);
+    final fg = isDark ? const Color(0xFF161616) : Colors.white;
     ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
       content: Row(children: [
-        Icon(Icons.check_circle_rounded, color: color, size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(msg)),
+        Icon(Icons.check_circle_rounded, color: color, size: 20),
+        const SizedBox(width: 12),
+        Expanded(child: Text(msg, style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 14))),
       ]),
-      backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+      backgroundColor: bg,
+      elevation: 8,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(16),
+      duration: const Duration(seconds: 3),
     ));
   }
 
@@ -294,7 +309,7 @@ class SettingsScreen extends ConsumerWidget {
     final ok = await _confirm(ctx, s.clearReadHistory, s.clearReadHistorySub, s);
     if (ok) {
       await ref.read(readArticlesProvider.notifier).clearAll();
-      if (ctx.mounted) _showSnackBar(ctx, s.cacheCleared, AppTheme.primary);
+      if (ctx.mounted) _showSnackBar(ctx, s.resetDone, AppTheme.primary);
     }
   }
 
@@ -402,7 +417,7 @@ class _FaqPage extends StatelessWidget {
             child: Row(children: [
               Icon(Icons.quiz_rounded, color: cs.primary, size: 20),
               const SizedBox(width: 10),
-              Expanded(child: Text(s.faqCount, style: Theme.of(context).textTheme.bodyMedium)),
+              Expanded(child: Text(s.faqCountSummary(faqs.length), style: Theme.of(context).textTheme.bodyMedium)),
             ]),
           ),
           ...List.generate(faqs.length, (i) => _FaqTile(q: faqs[i]['q']!, a: faqs[i]['a']!)),
@@ -528,16 +543,21 @@ class _SwRow extends StatelessWidget {
   const _SwRow({required this.icon, required this.iconColor,
       required this.title, required this.sub, required this.val, required this.onChanged});
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    child: Row(children: [
-      _IB(icon, iconColor), const SizedBox(width: 14),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        Text(sub, style: Theme.of(context).textTheme.bodySmall),
-      ])),
-      Switch(value: val, onChanged: onChanged),
-    ]),
+  Widget build(BuildContext context) => MergeSemantics(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(children: [
+        ExcludeSemantics(child: _IB(icon, iconColor)), const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(sub, style: Theme.of(context).textTheme.bodySmall),
+        ])),
+        Switch(
+          value: val, 
+          onChanged: onChanged,
+        ),
+      ]),
+    ),
   );
 }
 
@@ -550,49 +570,61 @@ class _PickRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(children: [
-        _IB(icon, iconColor), const SizedBox(width: 14),
-        Expanded(child: Text(title,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
-        GestureDetector(
-          onTap: () => showModalBottomSheet(
-            context: context,
-            backgroundColor: cs.surface,
-            shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-            builder: (_) => Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                const SizedBox(height: 12),
-                ...opts.map((o) => ListTile(
-                  title: Text(o, style: TextStyle(
-                      fontWeight: o == current ? FontWeight.w700 : FontWeight.normal,
-                      color: o == current ? cs.primary : cs.onSurface)),
-                  trailing: o == current ? Icon(Icons.check_rounded, color: cs.primary) : null,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  onTap: () { onPick(o); Navigator.pop(context); },
-                )),
+    return InkWell(
+      onTap: () => _showPicker(context, cs),
+      child: Semantics(
+        button: true,
+        label: title,
+        value: current,
+        hint: 'Double tap to change',
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(children: [
+            ExcludeSemantics(child: _IB(icon, iconColor)), const SizedBox(width: 14),
+            Expanded(child: Text(title,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: cs.surface, borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: cs.outline)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(current, style: TextStyle(color: cs.primary,
+                    fontSize: 13, fontWeight: FontWeight.w700)),
+                const SizedBox(width: 4),
+                ExcludeSemantics(
+                  child: Icon(Icons.expand_more_rounded, size: 16,
+                      color: cs.onSurface.withValues(alpha: 0.5)),
+                ),
               ]),
             ),
-          ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: cs.surface, borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: cs.outline)),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(current, style: TextStyle(color: cs.primary,
-                  fontSize: 13, fontWeight: FontWeight.w700)),
-              const SizedBox(width: 4),
-              Icon(Icons.expand_more_rounded, size: 16,
-                  color: cs.onSurface.withValues(alpha: 0.5)),
-            ]),
-          ),
+          ]),
         ),
-      ]),
+      ),
+    );
+  }
+
+  void _showPicker(BuildContext context, ColorScheme cs) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          const SizedBox(height: 12),
+          ...opts.map((o) => ListTile(
+            title: Text(o, style: TextStyle(
+                fontWeight: o == current ? FontWeight.w700 : FontWeight.normal,
+                color: o == current ? cs.primary : cs.onSurface)),
+            trailing: o == current ? Icon(Icons.check_rounded, color: cs.primary) : null,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            onTap: () { onPick(o); Navigator.pop(context); },
+          )),
+        ]),
+      ),
     );
   }
 }
@@ -605,37 +637,27 @@ class _NavRow extends StatelessWidget {
   const _NavRow({required this.icon, required this.iconColor,
       required this.title, required this.sub, this.titleColor, required this.onTap});
   @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap, borderRadius: BorderRadius.circular(16),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(children: [
-        _IB(icon, iconColor), const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14,
-              color: titleColor ?? Theme.of(context).colorScheme.onSurface)),
-          Text(sub, style: Theme.of(context).textTheme.bodySmall),
-        ])),
-        Icon(Icons.chevron_right_rounded, size: 18,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)),
-      ]),
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    child: InkWell(
+      onTap: onTap, borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(children: [
+          ExcludeSemantics(child: _IB(icon, iconColor)), const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14,
+                color: titleColor ?? Theme.of(context).colorScheme.onSurface)),
+            Text(sub, style: Theme.of(context).textTheme.bodySmall),
+          ])),
+          ExcludeSemantics(
+            child: Icon(Icons.chevron_right_rounded, size: 18,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35)),
+          ),
+        ]),
+      ),
     ),
   );
 }
 
-class _InfoRow extends StatelessWidget {
-  final IconData icon; final Color iconColor;
-  final String title, sub;
-  const _InfoRow({required this.icon, required this.iconColor, required this.title, required this.sub});
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    child: Row(children: [
-      _IB(icon, iconColor), const SizedBox(width: 14),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        Text(sub, style: Theme.of(context).textTheme.bodySmall),
-      ])),
-    ]),
-  );
-}
+

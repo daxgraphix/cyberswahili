@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cyberswahili/providers/blog_providers.dart';
 import 'package:cyberswahili/providers/app_providers.dart';
 import 'package:cyberswahili/providers/strings_provider.dart';
+import 'package:cyberswahili/providers/connectivity_provider.dart';
 import 'package:cyberswahili/widgets/post_card.dart';
 import 'package:cyberswahili/ui/screens/post_detail_screen.dart';
 import 'package:cyberswahili/ui/screens/settings_screen.dart';
@@ -51,32 +52,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     final bg = isDark ? AppTheme.dkBg : AppTheme.ltBg;
     final enabledCats = ref.watch(categoriesProvider);
     final s = ref.watch(stringsProvider);
+    final connectivity = ref.watch(connectivityProvider);
     final tabCount = enabledCats.length + 1;
     final tabs = _getTabController(tabCount);
 
     return Scaffold(
       backgroundColor: bg,
-      body: IndexedStack(
-        index: _navIdx,
+      body: Column(
         children: [
-          _ArticlesBody(
-            tabs: tabs,
-            enabledCats: enabledCats,
-            searching: _searching,
-            searchCtrl: _searchCtrl,
-            query: _query,
-            s: s,
-            onToggleSearch: () => setState(() {
-              _searching = !_searching;
-              if (!_searching) { _query = ''; _searchCtrl.clear(); }
-            }),
-            onQueryChange: (v) => setState(() => _query = v),
-            onClearQuery: () => setState(() { _query = ''; _searchCtrl.clear(); }),
-            onOpenDetail: _openDetail,
+          if (connectivity != ConnectionStatus.online)
+            _ConnectivityBanner(status: connectivity, s: s),
+          Expanded(
+            child: IndexedStack(
+              index: _navIdx,
+              children: [
+                _ArticlesBody(
+                  tabs: tabs,
+                  enabledCats: enabledCats,
+                  searching: _searching,
+                  searchCtrl: _searchCtrl,
+                  query: _query,
+                  s: s,
+                  onToggleSearch: () => setState(() {
+                    _searching = !_searching;
+                    if (!_searching) { _query = ''; _searchCtrl.clear(); }
+                  }),
+                  onQueryChange: (v) => setState(() => _query = v),
+                  onClearQuery: () => setState(() { _query = ''; _searchCtrl.clear(); }),
+                  onOpenDetail: _openDetail,
+                ),
+                _FavsBody(onOpenDetail: _openDetail),
+                SettingsScreen(embedded: true),
+                const ReportScreen(),
+              ],
+            ),
           ),
-          _FavsBody(onOpenDetail: _openDetail),
-          SettingsScreen(embedded: true),
-          const ReportScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -153,20 +163,46 @@ class _ArticlesBody extends ConsumerWidget {
               TextSpan(text: 'Swahili', style: TextStyle(color: cs.primary, fontSize: 22, fontWeight: FontWeight.w800)),
             ])),
             const Spacer(),
-            _IBtn(Icons.search_rounded, onToggleSearch, cs),
+            _IBtn(Icons.search_rounded, onToggleSearch, cs, s.search),
             const SizedBox(width: 6),
             _IBtn(Icons.refresh_rounded,
-                () {
-                  ref.read(blogPostsProvider.notifier).refreshPosts();
+                () async {
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  final snackBg = isDark ? Colors.white : const Color(0xFF161616);
+                  final snackFg = isDark ? const Color(0xFF161616) : Colors.white;
+                  
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(s.refreshing),
+                    content: Row(children: [
+                      const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary)),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(s.refreshing, style: TextStyle(color: snackFg, fontWeight: FontWeight.w600, fontSize: 14))),
+                    ]),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
-                    backgroundColor: cs.surfaceContainerHighest,
+                    backgroundColor: snackBg,
+                    elevation: 8,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     margin: const EdgeInsets.all(16),
                   ));
-                }, cs),
+                  
+                  final ok = await ref.read(blogPostsProvider.notifier).refreshPosts();
+                  if (!context.mounted) return;
+                  
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Row(children: [
+                      Icon(ok ? Icons.check_circle_rounded : Icons.error_rounded, color: ok ? Colors.green : Colors.red, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(ok ? s.refreshDone : s.refreshFailed, style: TextStyle(color: snackFg, fontWeight: FontWeight.w600, fontSize: 14))),
+                    ]),
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: snackBg,
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    margin: const EdgeInsets.all(16),
+                  ));
+                }, cs, s.refresh),
           ]),
           if (searching) ...[
             const SizedBox(height: 10),
@@ -461,12 +497,16 @@ class _ErrView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(stringsProvider);
+    final isOffline = msg.contains('SocketException') || 
+                     msg.contains('host lookup') || 
+                     msg.contains('Network is unreachable');
+    
     return Center(child: Padding(padding: const EdgeInsets.all(40), child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 72, height: 72, decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red.withValues(alpha: 0.3))), child: const Icon(Icons.wifi_off_rounded, size: 32, color: Colors.redAccent)),
+      Container(width: 72, height: 72, decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red.withValues(alpha: 0.3))), child: Icon(isOffline ? Icons.wifi_off_rounded : Icons.error_outline_rounded, size: 32, color: Colors.redAccent)),
       const SizedBox(height: 16),
-      Text(s.networkErr, style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: 6),
-      Text(msg.replaceAll('Exception: ', ''), style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center, maxLines: 3, overflow: TextOverflow.ellipsis),
+      Text(isOffline ? s.deviceOffline : s.networkErr, style: Theme.of(context).textTheme.titleLarge),
+      const SizedBox(height: 10),
+      Text(isOffline ? s.offlineMessage : msg.replaceAll('Exception: ', ''), style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center, maxLines: 3, overflow: TextOverflow.ellipsis),
       const SizedBox(height: 20),
       ElevatedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded, size: 16), label: Text(s.tryAgain)),
     ])));
@@ -477,7 +517,63 @@ class _IBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final ColorScheme cs;
-  const _IBtn(this.icon, this.onTap, this.cs);
+  final String label;
+  const _IBtn(this.icon, this.onTap, this.cs, this.label);
   @override
-  Widget build(BuildContext context) => GestureDetector(onTap: onTap, child: Container(width: 36, height: 36, decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(10), border: Border.all(color: cs.outline)), child: Icon(icon, size: 17, color: cs.onSurface.withValues(alpha: 0.7))));
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: label,
+    child: GestureDetector(
+      onTap: onTap, 
+      child: Container(
+        width: 44, height: 44, 
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest, 
+          borderRadius: BorderRadius.circular(10), 
+          border: Border.all(color: cs.outline)
+        ), 
+        child: Icon(icon, size: 18, color: cs.onSurface.withValues(alpha: 0.78))
+      ),
+    ),
+  );
 }
+
+class _ConnectivityBanner extends StatelessWidget {
+  final ConnectionStatus status;
+  final S s;
+
+  const _ConnectivityBanner({required this.status, required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDeviceOffline = status == ConnectionStatus.offline;
+    final color = isDeviceOffline ? Colors.orange : Colors.redAccent;
+    final icon = isDeviceOffline ? Icons.wifi_off_rounded : Icons.cloud_off_rounded;
+    final text = isDeviceOffline ? s.deviceOffline : s.serverOffline;
+
+    return Container(
+      width: double.infinity,
+      color: color,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 4,
+        bottom: 4,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: Colors.white, size: 14),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

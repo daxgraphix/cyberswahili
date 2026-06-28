@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cyberswahili/models/blog_post.dart';
 import 'package:cyberswahili/ui/theme/app_theme.dart';
 import 'package:cyberswahili/providers/app_providers.dart';
+import 'package:cyberswahili/utils/time_format.dart';
 
 class PostCard extends ConsumerWidget {
   final BlogPost post;
@@ -19,10 +20,11 @@ class PostCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isRead = ref.watch(readArticlesProvider).contains(post.postId);
+    final isRead = ref.watch(readArticlesProvider).containsKey(post.postId);
+    final swahili = ref.watch(settingsProvider).swahiliFirst;
     return featured
-        ? _HeroCard(post: post, onTap: onTap, isRead: isRead)
-        : _CompactCard(post: post, onTap: onTap, isRead: isRead);
+        ? _HeroCard(post: post, onTap: onTap, isRead: isRead, swahili: swahili)
+        : _CompactCard(post: post, onTap: onTap, isRead: isRead, swahili: swahili);
   }
 }
 
@@ -30,7 +32,8 @@ class _HeroCard extends StatelessWidget {
   final BlogPost post;
   final VoidCallback onTap;
   final bool isRead;
-  const _HeroCard({required this.post, required this.onTap, required this.isRead});
+  final bool swahili;
+  const _HeroCard({required this.post, required this.onTap, required this.isRead, required this.swahili});
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +86,7 @@ class _HeroCard extends StatelessWidget {
                     Row(children: [
                       const Icon(Icons.access_time_rounded, size: 12, color: Colors.white70),
                       const SizedBox(width: 4),
-                      Text(_timeAgo(post.published),
+                      Text(formatRelativeTime(post.published, swahili: swahili),
                           style: const TextStyle(color: Colors.white70, fontSize: 11)),
                       if (post.author != null && post.author!.isNotEmpty) ...[
                         const SizedBox(width: 10),
@@ -131,7 +134,8 @@ class _CompactCard extends StatelessWidget {
   final BlogPost post;
   final VoidCallback onTap;
   final bool isRead;
-  const _CompactCard({required this.post, required this.onTap, required this.isRead});
+  final bool swahili;
+  const _CompactCard({required this.post, required this.onTap, required this.isRead, required this.swahili});
 
   @override
   Widget build(BuildContext context) {
@@ -167,18 +171,18 @@ class _CompactCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(children: [
                       Icon(Icons.visibility_rounded, size: 10,
-                          color: cs.onSurface.withValues(alpha: 0.5)),
+                          color: cs.onSurface.withValues(alpha: 0.68)),
                       const SizedBox(width: 4),
                       Text('Imesomwa', style: Theme.of(context).textTheme.bodySmall
-                          ?.copyWith(color: cs.onSurface.withValues(alpha: 0.5))),
+                          ?.copyWith(color: cs.onSurface.withValues(alpha: 0.68))),
                     ]),
                   ],
                   const SizedBox(height: 8),
                   Row(children: [
                     Icon(Icons.access_time_rounded, size: 11,
-                        color: cs.onSurface.withValues(alpha: 0.4)),
+                        color: cs.onSurface.withValues(alpha: 0.62)),
                     const SizedBox(width: 3),
-                    Text(_timeAgo(post.published),
+                    Text(formatRelativeTime(post.published, swahili: swahili),
                         style: Theme.of(context).textTheme.bodySmall),
                     const Spacer(),
                     _FavBtn(postId: post.postId, mini: true),
@@ -233,7 +237,7 @@ class _FavBtn extends ConsumerWidget {
     return GestureDetector(
       onTap: () => ref.read(favouritesProvider.notifier).toggle(postId),
       child: Container(
-        width: mini ? 28 : 36, height: mini ? 28 : 36,
+        width: mini ? 44 : 44, height: mini ? 44 : 44,
         decoration: mini ? null : BoxDecoration(
           color: Colors.black26, borderRadius: BorderRadius.circular(10)),
         child: Icon(
@@ -263,14 +267,4 @@ class _Label extends StatelessWidget {
               fontWeight: FontWeight.w800, letterSpacing: 0.5)),
     );
   }
-}
-
-String _timeAgo(DateTime date) {
-  final d = DateTime.now().difference(date);
-  if (d.inDays > 365) return '${(d.inDays / 365).floor()}y';
-  if (d.inDays > 30)  return '${(d.inDays / 30).floor()}mo';
-  if (d.inDays > 0)   return '${d.inDays}d';
-  if (d.inHours > 0)  return '${d.inHours}h';
-  if (d.inMinutes > 0)return '${d.inMinutes}min';
-  return 'Sasa';
 }

@@ -45,6 +45,9 @@ dependencies:
   # Cached network image for efficient thumbnail loading with rounded corners
   cached_network_image: ^3.3.0
 
+  # Connectivity status for offline-aware UI and network error distinction
+  connectivity_plus: ^6.1.5
+
   # HTML to Flutter widget rendering for native Blogger content display
   flutter_widget_from_html: ^0.17.2
 
@@ -69,6 +72,9 @@ dependencies:
 
   # Share functionality for articles
   share_plus: ^10.0.0
+
+  # Local notifications for new article alerts
+  flutter_local_notifications: ^19.5.0
 
   # Shared preferences for persisting theme mode and app settings
   shared_preferences: ^2.2.3

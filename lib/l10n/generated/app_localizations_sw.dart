@@ -301,7 +301,7 @@ class AppLocalizationsSw extends AppLocalizations {
       'Onyesha takwimu za makala ulizosoma na kuhifadhi';
 
   @override
-  String get totalArticles => 'Makala Yaote';
+  String get totalArticles => 'Makala Zote';
 
   @override
   String get availableArticles => 'yanayopatikana';

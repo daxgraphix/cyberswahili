@@ -677,7 +677,7 @@ abstract class AppLocalizations {
   /// No description provided for @totalArticles.
   ///
   /// In sw, this message translates to:
-  /// **'Makala Yaote'**
+  /// **'Makala Zote'**
   String get totalArticles;
 
   /// No description provided for @availableArticles.

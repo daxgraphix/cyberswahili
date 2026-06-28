@@ -109,6 +109,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   Future<void> clearReadHistory() async {
     state = state.copyWith();
     await _prefs.remove('read_articles');
+    await _prefs.remove('read_article_events');
   }
 }
 
@@ -146,29 +147,57 @@ final favouritesProvider =
 
 // ── Read Articles ─────────────────────────────────────────────────────────────
 
-class ReadArticlesNotifier extends StateNotifier<Set<String>> {
+class ReadArticlesNotifier extends StateNotifier<Map<String, DateTime>> {
   final SharedPreferences _prefs;
-  static const _key = 'read_articles';
+  static const _legacyKey = 'read_articles';
+  static const _key = 'read_article_events';
 
-  ReadArticlesNotifier(this._prefs)
-      : super(Set.from(_prefs.getStringList(_key) ?? []));
+  ReadArticlesNotifier(this._prefs) : super(_load(_prefs));
 
-  Future<void> markAsRead(String postId) async {
-    final s = Set<String>.from(state)..add(postId);
-    state = s;
-    await _prefs.setStringList(_key, s.toList());
+  static Map<String, DateTime> _load(SharedPreferences prefs) {
+    final now = DateTime.now();
+    final events = <String, DateTime>{};
+    for (final raw in prefs.getStringList(_key) ?? const <String>[]) {
+      final sep = raw.indexOf('|');
+      if (sep <= 0 || sep == raw.length - 1) continue;
+      final readAt = DateTime.tryParse(raw.substring(sep + 1));
+      if (readAt != null) events[raw.substring(0, sep)] = readAt;
+    }
+    for (final id in prefs.getStringList(_legacyKey) ?? const <String>[]) {
+      events.putIfAbsent(id, () => now);
+    }
+    return events;
   }
 
-  bool isRead(String postId) => state.contains(postId);
+  Future<void> markAsRead(String postId, {DateTime? readAt}) async {
+    if (postId.isEmpty || state.containsKey(postId)) return;
+    final next = Map<String, DateTime>.from(state)
+      ..[postId] = readAt ?? DateTime.now();
+    state = next;
+    await _persist();
+  }
+
+  bool isRead(String postId) => state.containsKey(postId);
+
+  DateTime? readAt(String postId) => state[postId];
 
   Future<void> clearAll() async {
-    state = {};
+    state = const {};
     await _prefs.remove(_key);
+    await _prefs.remove(_legacyKey);
+  }
+
+  Future<void> _persist() async {
+    final serialized = state.entries
+        .map((entry) => '${entry.key}|${entry.value.toIso8601String()}')
+        .toList();
+    await _prefs.setStringList(_key, serialized);
+    await _prefs.setStringList(_legacyKey, state.keys.toList());
   }
 }
 
 final readArticlesProvider =
-    StateNotifierProvider<ReadArticlesNotifier, Set<String>>((ref) =>
+    StateNotifierProvider<ReadArticlesNotifier, Map<String, DateTime>>((ref) =>
         ReadArticlesNotifier(ref.watch(sharedPrefsProvider)));
 
 // ── Categories ─────────────────────────────────────────────────────────────

@@ -2,7 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/blog_post.dart';
 import '../repositories/blog_repository.dart';
 import '../services/blogger_api_service.dart';
+import '../services/notification_service.dart';
 import '../config/app_config.dart';
+import 'app_providers.dart';
+import 'strings_provider.dart';
 
 final bloggerApiServiceProvider = Provider<BloggerApiService>((ref) {
   final apiKey = AppConfig.bloggerApiKey;
@@ -17,9 +20,10 @@ final blogRepositoryProvider = Provider<BlogRepository>((ref) {
 
 class BlogPostsNotifier extends StateNotifier<AsyncValue<List<BlogPost>>> {
   final BlogRepository _repository;
+  final Ref _ref;
   bool _isRefreshing = false;
 
-  BlogPostsNotifier(this._repository) : super(const AsyncValue.loading()) {
+  BlogPostsNotifier(this._repository, this._ref) : super(const AsyncValue.loading()) {
     loadPosts();
   }
 
@@ -39,19 +43,39 @@ class BlogPostsNotifier extends StateNotifier<AsyncValue<List<BlogPost>>> {
     }
   }
 
-  Future<void> refreshPosts() async {
+  Future<bool> refreshPosts() async {
     _isRefreshing = true;
-    state = state.when(
-      loading: () => const AsyncValue.loading(),
-      error: (e, s) => AsyncValue.error(e, s),
-      data: (posts) => AsyncValue.data(posts),
-    );
+    final previousPosts = state.asData?.value ?? [];
     
     try {
-      await loadPosts(forceRefresh: true);
+      final posts = await _repository.getPosts(
+        maxResults: BlogRepository.defaultPageSize,
+        forceRefresh: true,
+      );
+      
+      // Check for new posts to notify
+      if (previousPosts.isNotEmpty) {
+        final existingIds = previousPosts.map((p) => p.postId).toSet();
+        final newPosts = posts.where((p) => !existingIds.contains(p.postId)).toList();
+        
+        if (newPosts.isNotEmpty && _ref.read(settingsProvider).notifications) {
+          final s = _ref.read(stringsProvider);
+          NotificationService.showNewArticlesNotification(
+            newPosts.length,
+            title: s.newArticlesNotif,
+            body: s.newArticlesNotifBody,
+            latestPostId: newPosts.first.postId,
+          );
+        }
+      }
+      
+      state = AsyncValue.data(posts);
       _isRefreshing = false;
-    } catch (_) {
+      return true;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
       _isRefreshing = false;
+      return false;
     }
   }
 
@@ -72,8 +96,15 @@ class BlogPostsNotifier extends StateNotifier<AsyncValue<List<BlogPost>>> {
 
 final blogPostsProvider = StateNotifierProvider<BlogPostsNotifier, AsyncValue<List<BlogPost>>>((ref) {
   final repository = ref.watch(blogRepositoryProvider);
-  return BlogPostsNotifier(repository);
+  return BlogPostsNotifier(repository, ref);
 });
+
+final cacheInfoProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  // Refresh when posts change
+  ref.watch(blogPostsProvider);
+  return ref.read(blogRepositoryProvider).getCacheInfo();
+});
+
 
 class BlogPostNotifier extends StateNotifier<AsyncValue<BlogPost>> {
   final BlogRepository _repository;
