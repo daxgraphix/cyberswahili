@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -14,17 +15,18 @@ val keystoreProperties = Properties().apply {
 android {
     namespace = "com.example.cyberswahili"
     compileSdk = 36
-    ndkVersion = "27.1.12297006"
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // Enable Java 8+ API desugaring for flutter_local_notifications
         isCoreLibraryDesugaringEnabled = true
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
     }
 
     defaultConfig {
@@ -51,10 +53,15 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
 }
 
 dependencies {
-    // Use the explicit add method to avoid unresolved function call issues in Kotlin DSL
     add("coreLibraryDesugaring", "com.android.tools:desugar_jdk_libs:2.1.5")
 }
 
