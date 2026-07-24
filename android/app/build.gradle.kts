@@ -33,8 +33,8 @@ android {
         applicationId = "co.cyberswahili.mobile"
         minSdk = 24
         targetSdk = 36
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 23
+        versionName = "1.0.3+23"
         
         multiDexEnabled = true
     }
@@ -51,12 +51,6 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-        }
-    }
-
-    packaging {
-        jniLibs {
-            useLegacyPackaging = false
         }
     }
 }

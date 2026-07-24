@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:isar_db/isar_db.dart';
 import '../models/blog_post.dart';
 import '../services/blogger_api_service.dart';
 import '../services/database_service.dart';
@@ -15,7 +16,7 @@ class BlogRepository {
     bool forceRefresh = false,
   }) async {
     final isar = await DatabaseService.isar;
-    final cached = await isar.blogPosts.buildQuery<BlogPost>().findAll();
+    final cached = await isar.blogPosts.where().findAllAsync();
     final sortedCache = _sortByDate(cached);
 
     if (sortedCache.isNotEmpty && !forceRefresh) {
@@ -41,7 +42,7 @@ class BlogRepository {
     await _upsert(fresh);
     
     final isar = await DatabaseService.isar;
-    final all = await isar.blogPosts.buildQuery<BlogPost>().findAll();
+    final all = await isar.blogPosts.where().findAllAsync();
     final sorted = _sortByDate(List.from(all));
     
     if (afterDate != null && sorted.any((p) => p.published.isBefore(afterDate))) {
@@ -53,14 +54,14 @@ class BlogRepository {
 
   Future<BlogPost> getPostById(String postId) async {
     final isar = await DatabaseService.isar;
-    final cached = await isar.blogPosts.getByPostId(postId);
+    final cached = await isar.blogPosts.where().postIdEqualTo(postId).findFirstAsync();
 
     if (cached != null) {
       if (!cached.isContentCached || cached.content.trim().isEmpty) {
         try {
           await _cachePostContent(cached);
           // Return the updated object from DB to ensure content is present
-          return await isar.blogPosts.getByPostId(postId) ?? cached;
+          return await isar.blogPosts.where().postIdEqualTo(postId).findFirstAsync() ?? cached;
         } catch (_) {
           return cached;
         }
@@ -80,7 +81,7 @@ class BlogRepository {
 
   Future<Map<String, dynamic>> getCacheInfo() async {
     final isar = await DatabaseService.isar;
-    final all = await isar.blogPosts.buildQuery<BlogPost>().findAll();
+    final all = await isar.blogPosts.where().findAllAsync();
     final cachedCount = all.where((p) => p.isContentCached).length;
     
     // Estimate size (very rough: ~10KB per full post, 1KB per metadata)
@@ -121,30 +122,30 @@ class BlogRepository {
 
   Future<void> clearCache() async {
     final isar = await DatabaseService.isar;
-    await isar.writeTxn(() => isar.blogPosts.clear());
+    isar.write((isar) => isar.blogPosts.clear());
   }
 
   Future<List<BlogPost>> getCachedPosts() async {
     final isar = await DatabaseService.isar;
-    final all = await isar.blogPosts.buildQuery<BlogPost>().findAll();
+    final all = await isar.blogPosts.where().findAllAsync();
     return _sortByDate(all.where((p) => p.isContentCached).toList());
   }
 
   Future<void> deleteFromCache(String postId) async {
     final isar = await DatabaseService.isar;
-    final post = await isar.blogPosts.getByPostId(postId);
+    final post = await isar.blogPosts.where().postIdEqualTo(postId).findFirstAsync();
     if (post != null) {
-      await isar.writeTxn(() async {
+      isar.write((isar) {
         post.content = '';
         post.isContentCached = false;
-        await isar.blogPosts.put(post);
+        isar.blogPosts.put(post);
       });
     }
   }
 
   Future<BlogPost> cachePostContent(String postId) async {
     final isar = await DatabaseService.isar;
-    final cached = await isar.blogPosts.getByPostId(postId);
+    final cached = await isar.blogPosts.where().postIdEqualTo(postId).findFirstAsync();
     if (cached == null) return getPostById(postId);
     if (cached.isContentCached && cached.content.trim().isNotEmpty) return cached;
     await _cachePostContent(cached);
@@ -158,9 +159,9 @@ class BlogRepository {
     final isar = await DatabaseService.isar;
     final List<BlogPost> newPosts = [];
     
-    await isar.writeTxn(() async {
+    isar.write((isar) {
       for (final post in posts) {
-        final existing = await isar.blogPosts.getByPostId(post.postId);
+        final existing = isar.blogPosts.where().postIdEqualTo(post.postId).findFirst();
         if (existing != null) {
           post.id = existing.id;
           if (!post.isContentCached && existing.isContentCached) {
@@ -171,7 +172,7 @@ class BlogRepository {
           post.isContentCached = post.content.isNotEmpty;
           newPosts.add(post);
         }
-        await isar.blogPosts.put(post);
+        isar.blogPosts.put(post);
       }
     });
     return newPosts;
@@ -194,10 +195,10 @@ class BlogRepository {
   Future<void> _cachePostContent(BlogPost post) async {
     final content = await _api.fetchPostContent(post.postId);
     final isar = await DatabaseService.isar;
-    await isar.writeTxn(() async {
+    isar.write((isar) {
       post.content = content;
       post.isContentCached = content.trim().isNotEmpty;
-      await isar.blogPosts.put(post);
+      isar.blogPosts.put(post);
     });
   }
 }

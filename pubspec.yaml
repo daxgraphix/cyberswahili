@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.3+7
+version: 1.0.3+23
 
 environment:
   sdk: ^3.11.5
@@ -39,8 +39,9 @@ dependencies:
   flutter_riverpod: ^2.5.1
 
   # Isar NoSQL database for local persistence and offline-first functionality
-  isar: ^3.1.0+1
-  isar_flutter_libs: ^3.1.0+1
+  # isar_db is a community-maintained fork with 16KB page size support (required by Google Play)
+  isar_db: ^1.0.1+1
+  isar_db_flutter_libs: ^1.0.1+1
 
   # Cached network image for efficient thumbnail loading with rounded corners
   cached_network_image: ^3.3.0
@@ -93,10 +94,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
-  # Isar code generator for automatic model generation
-  isar_generator: ^3.1.0+1
-
-  # Build runner for code generation tasks
+  # Build runner for code generation tasks (isar_db generator is bundled in isar_db)
   build_runner: ^2.4.7
 
   # Flutter launcher icons for app icon generation

@@ -1,3 +1,4 @@
+import 'package:isar_db/isar_db.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/blog_post.dart';
 import '../services/database_service.dart';
@@ -18,8 +19,7 @@ class BookmarksNotifier extends StateNotifier<AsyncValue<List<BlogPost>>> {
     state = const AsyncValue.loading();
     try {
       final isar = await DatabaseService.isar;
-      final allPosts = await isar.blogPosts.getAll([]);
-      final bookmarked = allPosts.whereType<BlogPost>().where((p) => p.isContentCached).toList();
+      final bookmarked = await isar.blogPosts.where().isContentCachedEqualTo(true).findAllAsync();
       state = AsyncValue.data(bookmarked);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);

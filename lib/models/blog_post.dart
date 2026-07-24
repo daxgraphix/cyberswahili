@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_db/isar_db.dart';
 
 // BlogPost entity represents a single blog post from Google Blogger API
 // This model is used for local persistence with Isar NoSQL database
@@ -8,7 +8,7 @@ part 'blog_post.g.dart';
 @collection
 class BlogPost {
   // Unique identifier from Blogger API (used as primary key)
-  Id id = Isar.autoIncrement;
+  int id = 0; // Primary key for isar_db (community fork uses 0 for auto-increment)
 
   // Blogger post ID string for API matching
   @Index(unique: true)

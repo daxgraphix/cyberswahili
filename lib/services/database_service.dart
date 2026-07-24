@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_db/isar_db.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/blog_post.dart';
 
@@ -17,8 +17,8 @@ class DatabaseService {
     final dir = await getApplicationDocumentsDirectory();
 
     // Initialize Isar with BlogPost schema
-    _isar = await Isar.open(
-      [BlogPostSchema],
+    _isar = Isar.open(
+      schemas: [BlogPostSchema],
       directory: dir.path,
       name: 'cyberswahili_db',
     );
